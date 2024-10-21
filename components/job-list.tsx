@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { Job } from '../types/job';
-import ApplyDrawer from './ApplyDrawer'; // Updated import
+import ApplyDrawer from './ApplyDrawer';
 
 dayjs.extend(relativeTime);
 
@@ -19,7 +19,7 @@ const JobList = () => {
   const [pageSize] = useState<number>(10);
   const [totalDocs, setTotalDocs] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false); // State for drawer visibility
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const observer = useRef<IntersectionObserver | null>(null);
 
   const fetchJobs = useCallback(async () => {
@@ -89,11 +89,11 @@ const JobList = () => {
   };
 
   const handleApplyClick = () => {
-    setIsDrawerOpen(true); // Open the drawer
+    setIsDrawerOpen(true);
   };
 
   const handleCloseDrawer = () => {
-    setIsDrawerOpen(false); // Close the drawer
+    setIsDrawerOpen(false);
   };
 
   return (
@@ -191,7 +191,7 @@ const JobList = () => {
                       <p className="text-sm text-gray-500 mt-1">Posted {dayjs(job.posted_at).fromNow()}</p>
                     </div>
                     <button
-                      onClick={handleApplyClick} // Open drawer on click
+                      onClick={handleApplyClick}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md text-sm transition duration-300 ease-in-out flex-shrink-0"
                     >
                       Apply

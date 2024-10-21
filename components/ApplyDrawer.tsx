@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { RESUME_JD_MATCH_API_URL } from '../app-config';
+import mammoth from 'mammoth';
 
 interface ApplyDrawerProps {
     isOpen: boolean;
@@ -9,9 +12,11 @@ interface ApplyDrawerProps {
 const ApplyDrawer: React.FC<ApplyDrawerProps> = ({ isOpen, onClose }) => {
     const [currentStep, setCurrentStep] = useState<number>(1);
     const [resume, setResume] = useState<File | null>(null);
+    const [resumeContent, setResumeContent] = useState<string>('');
     const [jobDescription, setJobDescription] = useState<string>('Job description goes here...');
     const [matchScore, setMatchScore] = useState<number | null>(null);
     const [suggestions, setSuggestions] = useState<string | null>(null);
+    const [error, setError] = useState<boolean>(false);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -31,7 +36,32 @@ const ApplyDrawer: React.FC<ApplyDrawerProps> = ({ isOpen, onClose }) => {
         };
     }, [isOpen, onClose]);
 
+    const handleFileChange = (file: File) => {
+        setError(false); // Clear error when a file is selected
+        if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const arrayBuffer = e.target?.result as ArrayBuffer;
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                setResumeContent(result.value);
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target?.result as string;
+                setResumeContent(text);
+            };
+            reader.readAsText(file);
+        }
+    };
+
     const handleNextStep = async () => {
+        if (currentStep === 1 && !resume) {
+            setError(true);
+            return;
+        }
+
         if (currentStep === 1 && resume) {
             try {
                 const formData = new FormData();
@@ -61,6 +91,7 @@ const ApplyDrawer: React.FC<ApplyDrawerProps> = ({ isOpen, onClose }) => {
         setCurrentStep((prevStep) => Math.max(prevStep - 1, 1));
     };
 
+
     const renderStepContent = () => {
         switch (currentStep) {
             case 1:
@@ -77,12 +108,19 @@ const ApplyDrawer: React.FC<ApplyDrawerProps> = ({ isOpen, onClose }) => {
                                 <span className="mx-2 text-gray-500">Or</span>
                                 <hr className="flex-grow border-gray-300" />
                             </div>
-                            <input
-                                type="file"
-                                className="border border-gray-300 p-2 rounded-md w-full"
-                                onChange={(e) => setResume(e.target.files?.[0] || null)}
-                                accept=".pdf,.docx,.txt"
-                            />
+                            <div className="w-full">
+                                <input
+                                    type="file"
+                                    className={`border p-2 rounded-md w-full border-gray-300'}`}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        setResume(file);
+                                        if (file) handleFileChange(file);
+                                    }}
+                                    accept=".docx,.txt"
+                                />
+                                {error && <p className="text-red-500 mt-5">Please select your resume.</p>}
+                            </div>
                         </div>
                         <div className="w-3/5">
                             <textarea
@@ -96,19 +134,19 @@ const ApplyDrawer: React.FC<ApplyDrawerProps> = ({ isOpen, onClose }) => {
             case 2:
                 return (
                     <div className="flex gap-4 h-full">
-                        <div className="w-2/5 overflow-auto">
-                            <p>Match Score: {matchScore !== null ? `${matchScore}%` : 'Analyzing...'}</p>
-                            <p>Suggestions:</p>
+                        <div className="w-2/5 overflow-auto" style={{ maxHeight: '80vh' }}>
+                            <p className="mb-2">Match Score: {matchScore !== null ? `${matchScore.toFixed(2)}%` : 'Analyzing...'}</p>
+                            <p className="mb-2">Suggestions:</p>
                             <div
                                 dangerouslySetInnerHTML={{ __html: suggestions || 'Analyzing...' }}
-                                className="text-sm"
+                                className="text-sm space-y-2"
                             />
                         </div>
                         <div className="w-3/5">
                             <textarea
                                 className="border border-gray-300 p-2 rounded-md w-full h-full"
-                                value={jobDescription}
-                                readOnly
+                                value={resumeContent}
+                                onChange={(e) => setResumeContent(e.target.value)}
                             />
                         </div>
                     </div>
@@ -141,7 +179,7 @@ const ApplyDrawer: React.FC<ApplyDrawerProps> = ({ isOpen, onClose }) => {
                             <div key={index} className="flex flex-col items-center flex-1">
                                 <div className="flex items-center">
                                     <div
-                                        className={`w-8 h-8 flex items-center justify-center rounded-full ${currentStep > index + 1 ? 'bg-blue-500 text-white' : currentStep === index + 1 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-500'
+                                        className={`w-6 h-6 flex items-center justify-center rounded-full text-xs ${currentStep > index + 1 ? 'bg-blue-500 text-white' : currentStep === index + 1 ? 'bg-blue-500 text-white' : 'bg-gray-300 text-gray-500'
                                             }`}
                                     >
                                         {currentStep > index + 1 ? (
@@ -156,13 +194,13 @@ const ApplyDrawer: React.FC<ApplyDrawerProps> = ({ isOpen, onClose }) => {
                                         </div>
                                     )}
                                 </div>
-                                <span className={`text-sm ${currentStep === index + 1 ? 'text-black' : 'text-gray-500'} mt-2`}>
+                                <span className={`text-xs ${currentStep === index + 1 ? 'text-black' : 'text-gray-500'} mt-1`}>
                                     {label}
                                 </span>
                             </div>
                         ))}
                     </div>
-                    <div className="flex-grow">{renderStepContent()}</div>
+                    <div className="flex-grow overflow-y-auto">{renderStepContent()}</div>
                     <div className="flex justify-between mt-4">
                         <button
                             onClick={handlePreviousStep}
