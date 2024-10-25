@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
+import { APIGateway, JobSearchParams } from "@/app/lib/apiGateway";
 import { Job } from "@/types/job";
 
 export async function GET(req: NextRequest) {
@@ -8,40 +9,13 @@ export async function GET(req: NextRequest) {
   const jobType = url.searchParams.get("jobType") || "";
   const location = url.searchParams.get("location") || "";
   const datePosted = url.searchParams.get("datePosted") || "";
-
-  // Step 1: Extract pagination parameters
   const page = parseInt(url.searchParams.get("page") || "1", 10);
   const pageSize = parseInt(url.searchParams.get("pageSize") || "10", 10);
+  const currentJobIds = url.searchParams.get("currentJobIds")?.split(",") || [];
 
-  // Step 2: Calculate offset
   const offset = (page - 1) * pageSize;
 
-  // Query to get the total count of documents in the collection
-  const { count: totalDocsCount, error: countError } = await supabase
-    .from("jobs")
-    .select("*", { count: "exact", head: true });
-
-  if (countError) {
-    console.error("Error fetching total job count:", countError);
-    return NextResponse.json(
-      { error: "Failed to fetch total job count" },
-      { status: 500 }
-    );
-  }
-
-  // Check if the offset is greater than the total number of documents
-  if (offset >= (totalDocsCount || 0)) {
-    return NextResponse.json(
-      {
-        data: [],
-        page: page,
-        pageSize: pageSize,
-        total: totalDocsCount || 0,
-      },
-      { status: 200 }
-    );
-  }
-
+  // Query the database
   let query = supabase.from("jobs").select("*", { count: "exact" });
 
   if (searchText) {
@@ -77,25 +51,84 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Step 3: Add limit and offset to the query
-  query = query.range(offset, offset + pageSize - 1);
-
-  const { data, error } = await query.returns<Job>();
-
-  if (error) {
-    console.error("Error fetching jobs:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch jobs" },
-      { status: 500 }
-    );
+  // Exclude jobs that the client already has
+  if (currentJobIds.length > 0) {
+    query = query.not("external_job_id", "in", `(${currentJobIds.join(",")})`);
   }
+
+  // Fetch one extra to know if there are more results
+  query = query.range(offset, offset + pageSize);
+
+  const { data: dbJobs, error, count } = await query;
+
+  let jobs = dbJobs || [];
+  let totalCount = count || 0;
+  let hasMore = true; // Initialize hasMore to true
+
+  // If we don't have enough results from the database or if we encountered the specific error,
+  // fetch from API Gateway
+  if (
+    jobs.length < pageSize ||
+    (error &&
+      error.code === "PGRST103" &&
+      error.message.includes("Requested range not satisfiable"))
+  ) {
+    try {
+      const params: JobSearchParams = {
+        searchText,
+        jobType,
+        location,
+        datePosted,
+        page,
+        pageSize: pageSize - jobs.length,
+      };
+      const externalJobs = await APIGateway.fetchJobs(params);
+
+      // Cache API results to the database
+      if (externalJobs.length > 0) {
+        const { error: insertError } = await supabase
+          .from("jobs")
+          .upsert(externalJobs, { onConflict: "external_job_id" });
+
+        if (insertError) {
+          console.error("Error inserting jobs into database:", insertError);
+        } else {
+          console.log(
+            `Successfully inserted/updated ${externalJobs.length} jobs in the database`
+          );
+        }
+      }
+
+      // Filter out any jobs that the client already has
+      const newExternalJobs = externalJobs.filter(
+        (job) => !currentJobIds.includes(job.external_job_id)
+      );
+
+      jobs = [...jobs, ...newExternalJobs];
+      totalCount += newExternalJobs.length;
+
+      // Set hasMore to false only if we didn't get enough jobs from both DB and API
+      hasMore = jobs.length >= pageSize;
+    } catch (apiError) {
+      console.error("Error fetching jobs from API Gateway:", apiError);
+      // If there's an error fetching from API, we still might have more results in future
+      hasMore = true;
+    }
+  } else {
+    // If we got enough jobs from the database, there might be more
+    hasMore = jobs.length >= pageSize;
+  }
+
+  // Ensure we only return pageSize number of jobs
+  jobs = jobs.slice(0, pageSize);
 
   return NextResponse.json(
     {
-      data: data,
+      data: jobs,
       page: page,
       pageSize: pageSize,
-      totalDocs: totalDocsCount || 0,
+      totalDocs: totalCount,
+      hasMore: hasMore,
     },
     { status: 200 }
   );

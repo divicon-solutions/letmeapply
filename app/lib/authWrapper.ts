@@ -11,3 +11,13 @@ export function withAuth(handler: (req: NextRequest) => Promise<NextResponse>) {
     return handler(req);
   };
 }
+
+/* 
+same opt docs
+i-983 kube
+stem120
+submit stem application in USCIS - Pay 410$
+related to job description
+
+legal team email address: 
+*/

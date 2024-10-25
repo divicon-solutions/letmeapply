@@ -9,9 +9,13 @@ export const POST = withAuth(async (req: NextRequest) => {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
-
+    const label = formData.get("label") as string;
     if (!file) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
+    }
+
+    if (!label) {
+      return NextResponse.json({ error: "Label is required" }, { status: 400 });
     }
 
     // Upload file to Supabase storage
@@ -28,6 +32,7 @@ export const POST = withAuth(async (req: NextRequest) => {
         file_name: file.name,
         file_path: storageData.path,
         file_size: file.size,
+        label: label,
       },
     ]);
 
@@ -71,36 +76,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   }
 });
 
-export const PUT = withAuth(async (req: NextRequest) => {
-  try {
-    const url = new URL(req.url);
-    const resumeId = url.searchParams.get("id");
-    const { file_name, file_path, file_size }: Partial<Resume> =
-      await req.json();
-
-    const { data, error } = await supabase
-      .from<Resume>("resumes")
-      .update({ file_name, file_path, file_size })
-      .eq("resume_id", resumeId);
-
-    if (error) throw error;
-
-    return NextResponse.json(
-      { message: "Resume updated successfully", data },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error("Error in updateResume:", error);
-    return NextResponse.json(
-      { error: error.message, details: error },
-      { status: 500 }
-    );
-  }
-});
-
 export const DELETE = withAuth(async (req: NextRequest) => {
-  const userId = (req as any).userId; // Get userId from the request
-
   try {
     const url = new URL(req.url);
     const resumeId = url.searchParams.get("id");

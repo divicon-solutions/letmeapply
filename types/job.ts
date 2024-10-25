@@ -1,13 +1,12 @@
 export interface Job {
-  job_id: number;
+  job_id: string;
+  external_job_id: string;
   title: string;
-  job_type: string;
-  location: string;
-  description: string;
   company: string;
-  company_logo: string;
-  posted_at: Date;
-  link: string;
-  is_active: boolean;
-  created_at: Date;
+  location: string;
+  job_type: string;
+  posted_at: string;
+  desc: string;
+  company_logo?: string;
+  platform_name: string;
 }
