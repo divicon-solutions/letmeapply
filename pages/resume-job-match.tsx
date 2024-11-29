@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { FaCloudUploadAlt } from 'react-icons/fa';
 import NavWrapper from '@/components/NavWrapper';
 import { ClerkProvider } from '@clerk/nextjs';
 
@@ -18,10 +17,7 @@ const ResumeJobMatch = () => {
   };
 
   const checkMatchScore = async () => {
-    console.log('Checking match score...');
-
-    // hit this api: http://localhost:3000/api/resume
-    // with the file and job description and user_id as form data
+    if (!resume) return;
 
     const formData = new FormData();
     formData.append('file', resume as Blob);
@@ -38,50 +34,59 @@ const ResumeJobMatch = () => {
 
     const data = await response.json();
     console.log(data);
-
   };
 
   return (
-    <ClerkProvider>
-      <NavWrapper>
-        <div className="container mx-auto p-6">
-          <div className="flex flex-col lg:flex-row lg:space-x-6">
-            <div className="bg-white p-4 rounded-lg shadow-md flex-1">
-              <h2 className="text-xl font-semibold mb-4">Upload Resume</h2>
-              <label className="w-full h-64 flex flex-col items-center justify-center px-4 py-6 bg-blue-100 text-blue-600 rounded-lg shadow-md tracking-wide uppercase border border-blue cursor-pointer hover:bg-blue-200 hover:text-blue-800 transition-colors">
-                <FaCloudUploadAlt size={50} className="mb-3" />
-                <span className="mt-2 text-base leading-normal">Select a file</span>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleResumeUpload}
-                  className="hidden"
-                />
-              </label>
-              {resume && <p className="mt-4 text-sm text-gray-600">{resume.name}</p>}
+    <NavWrapper>
+      <div className="container mx-auto p-6">
+        <div className="flex flex-col lg:flex-row lg:space-x-6">
+          <div className="bg-white p-6 rounded-lg shadow-md flex-1">
+            <h2 className="text-xl font-semibold mb-4">Upload Resume</h2>
+            <div className="flex-grow flex items-center justify-center border-2 border-gray-300 border-dashed rounded-lg p-6 h-[250px]">
+              <div className="text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p className="mt-1 text-sm text-gray-600">
+                  <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                    <span>Upload a file</span>
+                    <input
+                      id="file-upload"
+                      name="file-upload"
+                      type="file"
+                      className="sr-only"
+                      onChange={handleResumeUpload}
+                      accept=".pdf,.doc,.docx"
+                    />
+                  </label>
+                  {' '}or drag and drop
+                </p>
+                <p className="mt-1 text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
+              </div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-md flex-1">
-              <h2 className="text-xl font-semibold mb-4">Paste Job Description</h2>
-              <textarea
-                value={jobDescription}
-                onChange={handleJobDescriptionChange}
-                rows={10}
-                className="w-full p-2 border border-gray-300 rounded h-64"
-                placeholder="Paste the job description here..."
-              />
-            </div>
+            {resume && <p className="mt-2 text-sm text-gray-600">Selected file: {resume.name}</p>}
           </div>
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={checkMatchScore}
-              className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition-colors"
-            >
-              Check Match Score
-            </button>
+          <div className="bg-white p-6 rounded-lg shadow-md flex-1">
+            <h2 className="text-xl font-semibold mb-4">Paste Job Description</h2>
+            <textarea
+              value={jobDescription}
+              onChange={handleJobDescriptionChange}
+              className="flex-grow p-2 border border-gray-300 rounded-lg resize-none h-[250px] w-full"
+              placeholder="Paste the job description here..."
+            />
           </div>
         </div>
-      </NavWrapper>
-    </ClerkProvider>
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={checkMatchScore}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={!resume || !jobDescription}
+          >
+            Check Match Score
+          </button>
+        </div>
+      </div>
+    </NavWrapper>
   );
 };
 

@@ -1,12 +1,10 @@
 export interface UserJobInteraction {
-  interaction_id: number;
-  user_id: number;
-  job_id: number;
-  interaction_type: string; // 'marked', 'applied', 'matched'
-  status: string | null;
-  score: number | null;
-  resume_id: number;
-  is_tailored: boolean;
-  created_at: Date;
-  updated_at: Date;
+  interaction_id: string;
+  user_id: string;
+  job_id: string;
+  external_job_id: string;
+  status: "clicked" | "applied" | "under_consideration";
+  created_at: string;
+  updated_at: string;
+  notes?: string;
 }

@@ -1,15 +1,13 @@
-import React from 'react';
-import JobBoard from '@/components/JobBoard';
+'use client';
+
 import NavWrapper from '@/components/NavWrapper';
-import { ClerkProvider } from '@clerk/nextjs';
+import JobBoard from '@/components/JobBoard';
 
 const JobsPage = () => {
   return (
-    <ClerkProvider>
-      <NavWrapper>
-        <JobBoard />
-      </NavWrapper>
-    </ClerkProvider>
+    <NavWrapper>
+      <JobBoard />
+    </NavWrapper>
   );
 };
 

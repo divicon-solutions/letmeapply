@@ -9,4 +9,6 @@ export interface Job {
   desc: string;
   company_logo?: string;
   platform_name: string;
+  link: string;
+  is_active: boolean;
 }

@@ -1,20 +1,31 @@
 import { useState } from 'react';
 import JobList from './job-list';
-import Board from './Board';
+import JobsClicked from './JobsClicked';
+import AppliedJobs from './AppliedJobs';
+import UnderConsideration from './UnderConsideration';
+import { useTabCounts } from '@/lib/hooks/useTabCounts';
 
 const JobBoard = () => {
     const [activeTab, setActiveTab] = useState('Jobs');
+    const { data: tabCounts, isLoading: isLoadingCounts } = useTabCounts();
+
+    const tabs = [
+        { id: 'Jobs', label: 'Jobs' },
+        { id: 'Jobs Clicked', label: 'Jobs Clicked', count: tabCounts?.clicked },
+        { id: 'Applied', label: 'Applied', count: tabCounts?.applied },
+        { id: 'Under Consideration', label: 'Under Consideration', count: tabCounts?.under_consideration },
+    ];
 
     const renderContent = () => {
         switch (activeTab) {
             case 'Jobs':
                 return <JobList />;
+            case 'Jobs Clicked':
+                return <JobsClicked activeTab={activeTab} />;
             case 'Applied':
-                return <div>Applied Jobs Content</div>;
+                return <AppliedJobs activeTab={activeTab} />;
             case 'Under Consideration':
-                return <div>Under Consideration Content</div>;
-            case 'All':
-                return <div>All Jobs Content</div>;
+                return <UnderConsideration activeTab={activeTab} />;
             default:
                 return null;
         }
@@ -23,13 +34,18 @@ const JobBoard = () => {
     return (
         <div>
             <div className="flex space-x-4 border-b">
-                {['Jobs', 'Applied', 'Under Consideration', 'All'].map((tab) => (
+                {tabs.map((tab) => (
                     <button
-                        key={tab}
-                        className={`py-2 px-4 ${activeTab === tab ? 'border-b-2 border-blue-500' : ''}`}
-                        onClick={() => setActiveTab(tab)}
+                        key={tab.id}
+                        className={`py-2 px-4 flex items-center gap-2 ${activeTab === tab.id ? 'border-b-2 border-blue-500' : ''}`}
+                        onClick={() => setActiveTab(tab.id)}
                     >
-                        {tab}
+                        {tab.label}
+                        {tab.count !== undefined && (
+                            <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+                                {tab.count}
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>

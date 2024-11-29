@@ -39,27 +39,29 @@ export class APIGateway {
         params.pageSize
       );
 
-      return adzunaData.results.map((job: any) => {
-        // Create a unique ID if job.id is not available
-        const uniqueId =
-          job.id ||
-          `${job.company.display_name}-${job.title}-${job.created}`
-            .replace(/\s+/g, "-")
-            .toLowerCase();
-
-        return {
+      return adzunaData.results
+        .filter(
+          (job: any) =>
+            job.id &&
+            job.title &&
+            job.company?.display_name &&
+            job.location?.display_name &&
+            job.created &&
+            job.description &&
+            job.redirect_url
+        )
+        .map((job: any) => ({
           title: job.title,
           company: job.company.display_name,
           location: job.location.display_name,
           job_type: params.jobType,
           posted_at: job.created,
           desc: job.description,
-          company_logo: job?.company_logo || "",
+          company_logo: job.company.logo || "",
           platform_name: "adzuna",
-          external_job_id: uniqueId,
+          external_job_id: job.id,
           link: job.redirect_url,
-        };
-      });
+        }));
     } catch (error) {
       console.error("Error in fetchJobsFromAdzuna:", error);
       return [];

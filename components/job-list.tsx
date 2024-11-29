@@ -12,10 +12,9 @@ dayjs.extend(relativeTime);
 const JobList = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [dateFilter, setDateFilter] = useState<string>('All');
+  const [dateFilter, setDateFilter] = useState<string>('Past 24 hours');
   const [searchText, setSearchText] = useState<string>('');
   const [jobType, setJobType] = useState<string>('full-time');
-  const [location, setLocation] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(10);
   const [loading, setLoading] = useState<boolean>(false);
@@ -34,7 +33,6 @@ const JobList = () => {
       pageSize: pageSize.toString(),
       searchText,
       jobType,
-      location,
       datePosted: dateFilter !== 'All' ? dateFilter : '',
       currentJobIds: jobs.map(job => job.external_job_id).join(','),
     });
@@ -55,7 +53,7 @@ const JobList = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, searchText, jobType, location, dateFilter, jobs, hasMore]);
+  }, [page, pageSize, searchText, jobType, dateFilter, jobs, hasMore]);
 
   const lastJobElementRef = useCallback(
     (node: HTMLDivElement) => {
@@ -78,7 +76,7 @@ const JobList = () => {
     fetchJobs(true);
   };
 
-  const handleApplyClick = useCallback(() => {
+  const handleTailorResume = useCallback(() => {
     setIsDrawerOpen(true);
     setDrawerKey(prevKey => prevKey + 1);
   }, []);
@@ -86,6 +84,12 @@ const JobList = () => {
   const handleCloseDrawer = useCallback(() => {
     setIsDrawerOpen(false);
   }, []);
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   useEffect(() => {
     fetchJobs(true);
@@ -100,6 +104,7 @@ const JobList = () => {
             placeholder="Job Title"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
+            onKeyDown={handleKeyPress}
             className="flex-grow border border-gray-200 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <select
@@ -110,15 +115,6 @@ const JobList = () => {
             <option value="">Job Type</option>
             <option value="full-time">Full-time</option>
             <option value="contract">Contract</option>
-          </select>
-          <select
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="border border-gray-200 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Location</option>
-            <option value="San Francisco">San Francisco</option>
-            <option value="Remote">Remote</option>
           </select>
           <select
             className="border border-gray-200 p-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -172,7 +168,7 @@ const JobList = () => {
 
         <div className="w-2/3 bg-white border border-gray-100 p-6 rounded-md shadow-sm">
           {selectedJob ? (
-            <JobDetails job={selectedJob} onApply={handleApplyClick} />
+            <JobDetails job={selectedJob} onTailorResume={handleTailorResume} />
           ) : (
             <p className="text-gray-500 text-center">Select a job to view details</p>
           )}
