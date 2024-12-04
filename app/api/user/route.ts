@@ -134,7 +134,7 @@ async function checkUserExistsAndCreate(req: NextRequest) {
 
     const { data, error } = await supabase
       .from<User>("users")
-      .select("id")
+      .select("user_id")
       .eq("email", email)
       .single();
 

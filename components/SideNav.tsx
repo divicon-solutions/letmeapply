@@ -1,13 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { FaBriefcase, FaClipboard, FaFileAlt, FaChartLine, FaEnvelopeOpenText, FaFileArchive } from 'react-icons/fa';
+import { FaBriefcase, FaFileAlt, FaEnvelopeOpenText, FaUser } from 'react-icons/fa';
+import { useAuth } from '@clerk/nextjs';
+import { usePathname } from 'next/navigation';
 
 interface SideNavProps {
   isOpen: boolean;
 }
 
 const SideNav = ({ isOpen }: SideNavProps) => {
+  const { isSignedIn } = useAuth();
+  const pathname = usePathname();
+
+  const navItems = isSignedIn ? navAuthenticatedItems : navUnauthenticatedItems;
+
   return (
     <nav
       className={`
@@ -27,13 +34,16 @@ const SideNav = ({ isOpen }: SideNavProps) => {
               href={item.path}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-lg
-                text-gray-300 hover:text-white
+                ${pathname === item.path ? 'bg-gray-700/50 text-white' : 'text-gray-300 hover:text-white'}
                 hover:bg-gray-700/50
                 transition-all duration-200
                 group
               `}
             >
-              <span className="text-gray-400 group-hover:text-blue-400 transition-colors">
+              <span className={`
+                text-gray-400 group-hover:text-blue-400 transition-colors
+                ${pathname === item.path ? 'text-blue-400' : ''}
+              `}>
                 {item.icon}
               </span>
               <span className="font-medium">{item.label}</span>
@@ -41,24 +51,11 @@ const SideNav = ({ isOpen }: SideNavProps) => {
           ))}
         </div>
       </div>
-
-      {/* Bottom Section - Pro Badge */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-700">
-        <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-gray-800">
-          {/* <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <FaChartLine className="w-4 h-4 text-blue-400" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-white">Pro Account</p>
-            <p className="text-xs text-gray-400">Advanced Features</p>
-          </div> */}
-        </div>
-      </div>
     </nav>
   );
 };
 
-const navItems = [
+const navAuthenticatedItems = [
   {
     label: 'Jobs',
     path: '/jobs',
@@ -73,7 +70,20 @@ const navItems = [
     label: 'AI Cover Letter',
     path: '/ai-cover-letter',
     icon: <FaEnvelopeOpenText className="w-5 h-5" />,
+  },
+  {
+    label: 'Profile',
+    path: '/profile',
+    icon: <FaUser className="w-5 h-5" />,
   }
+];
+
+const navUnauthenticatedItems = [
+  {
+    label: 'Jobs',
+    path: '/jobs',
+    icon: <FaBriefcase className="w-5 h-5" />,
+  },
 ];
 
 export default SideNav;
