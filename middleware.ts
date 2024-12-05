@@ -1,12 +1,25 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { authMiddleware } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-export default clerkMiddleware();
+export default authMiddleware({
+  publicRoutes: ["/", "/signin"],
+  ignoredRoutes: ["/api/webhook"],
+  afterSignInUrl: "/profile",
+
+  afterAuth(auth, req) {
+    // Handle users who aren't authenticated
+    if (!auth.userId && !auth.isPublicRoute) {
+      const signInUrl = new URL("/signin", req.url);
+      return NextResponse.redirect(signInUrl);
+    }
+    return NextResponse.next();
+  },
+});
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
+    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/",
     "/(api|trpc)(.*)",
   ],
 };
