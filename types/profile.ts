@@ -1,16 +1,20 @@
 export interface ProfileData {
-  pii: {
-    full_name: string;
+  personal_info: {
+    name: string;
     email: string;
-    phone: string;
+    phone_number: string;
+    location: string;
+    linkedin_url: string;
+    github_url: string;
   };
+  summary: string;
   education: Array<{
-    organization: string;
+    school_name: string;
     degree: string;
-    major: string | null;
-    start_date: string | null;
+    location: string;
+    start_date: string;
     end_date: string;
-    achievements: string[];
+    is_current: boolean;
   }>;
   work_experience: Array<{
     job_title: string;
@@ -18,11 +22,38 @@ export interface ProfileData {
     location: string;
     start_date: string;
     end_date: string;
+    is_current: boolean;
     bullet_points: string[];
   }>;
-  skills: {
-    'Programming Languages': string[];
-    Tools: string[];
-    Other: string[];
-  };
+  skills: Array<{
+    category: string;
+    skills: string[];
+  }>;
+  projects: Array<{
+    name: string;
+    bulletPoints: string[];
+    dates: {
+      startDate: string;
+      completionDate: string;
+    };
+    organization: string;
+    location: string;
+  }>;
+  certifications: Array<{
+    name: string;
+    description: string;
+  }>;
+  achievements: Array<{
+    name: string;
+    description: string;
+  }>;
+  languages: Array<{
+    name: string;
+    description: string;
+  }>;
+  publications: Array<{
+    title: string;
+    description: string;
+    authors: string[];
+  }>;
 }

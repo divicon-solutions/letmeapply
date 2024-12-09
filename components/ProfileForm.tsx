@@ -32,6 +32,41 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         />
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Location</label>
+        <Field
+          name="pii.location"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">LinkedIn</label>
+        <Field
+          name="pii.linkedin"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">GitHub</label>
+        <Field
+          name="pii.githubUrl"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
+    </div>
+  );
+
+  const renderSummary = () => (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Professional Summary</label>
+        <Field
+          name="summary"
+          as="textarea"
+          rows={4}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
+      </div>
     </div>
   );
 
@@ -58,9 +93,16 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Degree</label>
+                <label className="block text-sm font-medium text-gray-700">Accreditation</label>
                 <Field
-                  name={`education.${index}.degree`}
+                  name={`education.${index}.accreditation`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Location</label>
+                <Field
+                  name={`education.${index}.location`}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
@@ -68,7 +110,7 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Start Date</label>
                   <Field
-                    name={`education.${index}.start_date`}
+                    name={`education.${index}.dates.startDate`}
                     type="date"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -76,9 +118,17 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
                 <div>
                   <label className="block text-sm font-medium text-gray-700">End Date</label>
                   <Field
-                    name={`education.${index}.end_date`}
+                    name={`education.${index}.dates.completionDate`}
                     type="date"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Current</label>
+                  <Field
+                    type="checkbox"
+                    name={`education.${index}.dates.isCurrent`}
+                    className="mt-1 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -117,10 +167,13 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
             type="button"
             onClick={() => push({
               organization: '',
-              degree: '',
-              major: null,
-              start_date: null,
-              end_date: '',
+              accreditation: '',
+              location: '',
+              dates: {
+                startDate: '',
+                completionDate: '',
+                isCurrent: false
+              },
               achievements: []
             })}
             className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -150,14 +203,14 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
               <div>
                 <label className="block text-sm font-medium text-gray-700">Job Title</label>
                 <Field
-                  name={`work_experience.${index}.job_title`}
+                  name={`work_experience.${index}.jobTitle`}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Company Name</label>
+                <label className="block text-sm font-medium text-gray-700">Organization</label>
                 <Field
-                  name={`work_experience.${index}.company_name`}
+                  name={`work_experience.${index}.organization`}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
@@ -172,7 +225,7 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Start Date</label>
                   <Field
-                    name={`work_experience.${index}.start_date`}
+                    name={`work_experience.${index}.dates.startDate`}
                     type="date"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -180,25 +233,33 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
                 <div>
                   <label className="block text-sm font-medium text-gray-700">End Date</label>
                   <Field
-                    name={`work_experience.${index}.end_date`}
+                    name={`work_experience.${index}.dates.completionDate`}
+                    type="date"
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Current</label>
+                  <Field
+                    type="checkbox"
+                    name={`work_experience.${index}.dates.isCurrent`}
+                    className="mt-1 rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
               </div>
-              <FieldArray name={`work_experience.${index}.bullet_points`}>
-                {({ push: pushPoint, remove: removePoint }) => (
+              <FieldArray name={`work_experience.${index}.bulletPoints`}>
+                {({ push: pushBullet, remove: removeBullet }) => (
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
-                    {initialData.work_experience[index].bullet_points.map((_, pointIndex) => (
-                      <div key={pointIndex} className="flex gap-2">
+                    {initialData.work_experience[index].bulletPoints.map((_, bulletIndex) => (
+                      <div key={bulletIndex} className="flex gap-2">
                         <Field
-                          name={`work_experience.${index}.bullet_points.${pointIndex}`}
-                          as="textarea"
+                          name={`work_experience.${index}.bulletPoints.${bulletIndex}`}
                           className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         />
                         <button
                           type="button"
-                          onClick={() => removePoint(pointIndex)}
+                          onClick={() => removeBullet(bulletIndex)}
                           className="text-red-500 hover:text-red-700"
                         >
                           <FaTrash />
@@ -207,7 +268,7 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
                     ))}
                     <button
                       type="button"
-                      onClick={() => pushPoint('')}
+                      onClick={() => pushBullet('')}
                       className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
                     >
                       <FaPlus /> Add Bullet Point
@@ -220,16 +281,173 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
           <button
             type="button"
             onClick={() => push({
-              job_title: '',
-              company_name: '',
+              jobTitle: '',
+              organization: '',
               location: '',
-              start_date: '',
-              end_date: '',
-              bullet_points: []
+              dates: {
+                startDate: '',
+                completionDate: '',
+                isCurrent: false
+              },
+              bulletPoints: [],
+              achievements: []
             })}
             className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Add Experience
+            Add Work Experience
+          </button>
+        </div>
+      )}
+    </FieldArray>
+  );
+
+  const renderProjects = () => (
+    <FieldArray name="projects">
+      {({ push, remove }) => (
+        <div className="space-y-6">
+          {initialData.projects?.map((_, index) => (
+            <div key={index} className="border rounded-lg p-4 space-y-4">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <FaTrash />
+                </button>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Project Name</label>
+                <Field
+                  name={`projects.${index}.name`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Organization</label>
+                <Field
+                  name={`projects.${index}.organization`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Location</label>
+                <Field
+                  name={`projects.${index}.location`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                  <Field
+                    name={`projects.${index}.dates.startDate`}
+                    type="date"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">End Date</label>
+                  <Field
+                    name={`projects.${index}.dates.completionDate`}
+                    type="date"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <FieldArray name={`projects.${index}.bulletPoints`}>
+                {({ push: pushBullet, remove: removeBullet }) => (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
+                    {initialData.projects?.[index].bulletPoints.map((_, bulletIndex) => (
+                      <div key={bulletIndex} className="flex gap-2">
+                        <Field
+                          name={`projects.${index}.bulletPoints.${bulletIndex}`}
+                          className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeBullet(bulletIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => pushBullet('')}
+                      className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      <FaPlus /> Add Bullet Point
+                    </button>
+                  </div>
+                )}
+              </FieldArray>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => push({
+              name: '',
+              organization: '',
+              location: '',
+              dates: {
+                startDate: '',
+                completionDate: ''
+              },
+              bulletPoints: []
+            })}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Add Project
+          </button>
+        </div>
+      )}
+    </FieldArray>
+  );
+
+  const renderCertifications = () => (
+    <FieldArray name="certifications">
+      {({ push, remove }) => (
+        <div className="space-y-6">
+          {initialData.certifications?.map((_, index) => (
+            <div key={index} className="border rounded-lg p-4 space-y-4">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <FaTrash />
+                </button>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Certification Name</label>
+                <Field
+                  name={`certifications.${index}.name`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <Field
+                  name={`certifications.${index}.description`}
+                  as="textarea"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => push({
+              name: '',
+              description: ''
+            })}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Add Certification
           </button>
         </div>
       )}
@@ -237,79 +455,263 @@ export default function ProfileForm({ initialData, activeTab }: ProfileFormProps
   );
 
   const renderSkills = () => (
-    <div className="space-y-6">
-      {Object.entries(initialData.skills).map(([category, skills]) => (
-        <div key={category} className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">{category}</label>
-          <FieldArray name={`skills.${category}`}>
-            {({ push, remove }) => (
-              <div className="space-y-2">
-                {skills.map((_, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Field
-                      name={`skills.${category}.${index}`}
-                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                ))}
+    <FieldArray name="skills">
+      {({ push, remove }) => (
+        <div className="space-y-6">
+          {Object.entries(initialData.skills || {}).map(([category, skills], index) => (
+            <div key={category} className="border rounded-lg p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <Field
+                  name={`skills[${index}].category`}
+                  className="font-medium text-gray-700 border-none bg-transparent"
+                  placeholder="Category Name"
+                />
                 <button
                   type="button"
-                  onClick={() => push('')}
-                  className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
+                  onClick={() => remove(index)}
+                  className="text-red-500 hover:text-red-700"
                 >
-                  <FaPlus /> Add {category} Skill
+                  <FaTrash />
                 </button>
               </div>
-            )}
-          </FieldArray>
+              <FieldArray name={`skills[${index}].skills`}>
+                {({ push: pushSkill, remove: removeSkill }) => (
+                  <div className="space-y-2">
+                    {skills.map((_, skillIndex) => (
+                      <div key={skillIndex} className="flex gap-2">
+                        <Field
+                          name={`skills[${index}].skills[${skillIndex}]`}
+                          className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(skillIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => pushSkill('')}
+                      className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      <FaPlus /> Add Skill
+                    </button>
+                  </div>
+                )}
+              </FieldArray>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => push({ category: '', skills: [] })}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Add Skill Category
+          </button>
         </div>
-      ))}
-    </div>
+      )}
+    </FieldArray>
   );
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'Personal Info':
-        return renderPersonalInfo();
-      case 'Education':
-        return renderEducation();
-      case 'Experience':
-        return renderExperience();
-      case 'Skills':
-        return renderSkills();
-      default:
-        return null;
-    }
-  };
+  const renderAchievements = () => (
+    <FieldArray name="achievements">
+      {({ push, remove }) => (
+        <div className="space-y-6">
+          {initialData.achievements?.map((_, index) => (
+            <div key={index} className="border rounded-lg p-4 space-y-4">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <FaTrash />
+                </button>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Achievement Name</label>
+                <Field
+                  name={`achievements.${index}.name`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <Field
+                  name={`achievements.${index}.description`}
+                  as="textarea"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => push({
+              name: '',
+              description: ''
+            })}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Add Achievement
+          </button>
+        </div>
+      )}
+    </FieldArray>
+  );
+
+  const renderLanguages = () => (
+    <FieldArray name="languages">
+      {({ push, remove }) => (
+        <div className="space-y-6">
+          {initialData.languages?.map((_, index) => (
+            <div key={index} className="border rounded-lg p-4 space-y-4">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <FaTrash />
+                </button>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Language</label>
+                <Field
+                  name={`languages.${index}.name`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Proficiency Level</label>
+                <Field
+                  name={`languages.${index}.description`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => push({
+              name: '',
+              description: ''
+            })}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Add Language
+          </button>
+        </div>
+      )}
+    </FieldArray>
+  );
+
+  const renderPublications = () => (
+    <FieldArray name="publications">
+      {({ push, remove }) => (
+        <div className="space-y-6">
+          {initialData.publications?.map((_, index) => (
+            <div key={index} className="border rounded-lg p-4 space-y-4">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <FaTrash />
+                </button>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <Field
+                  name={`publications.${index}.title`}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <Field
+                  name={`publications.${index}.description`}
+                  as="textarea"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <FieldArray name={`publications.${index}.authors`}>
+                {({ push: pushAuthor, remove: removeAuthor }) => (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Authors</label>
+                    {initialData.publications?.[index].authors?.map((_, authorIndex) => (
+                      <div key={authorIndex} className="flex gap-2">
+                        <Field
+                          name={`publications.${index}.authors.${authorIndex}`}
+                          className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeAuthor(authorIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => pushAuthor('')}
+                      className="text-blue-500 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      <FaPlus /> Add Author
+                    </button>
+                  </div>
+                )}
+              </FieldArray>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => push({
+              title: '',
+              description: '',
+              authors: []
+            })}
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Add Publication
+          </button>
+        </div>
+      )}
+    </FieldArray>
+  );
 
   return (
     <Formik
       initialValues={initialData}
       onSubmit={(values) => {
         console.log(values);
-        // TODO: Implement save functionality
       }}
     >
-      <Form className="bg-white rounded-lg shadow p-6">
-        <div className="space-y-6">
-          {renderContent()}
-          {activeTab !== 'Resume' && (
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Save Changes
-              </button>
-            </div>
-          )}
+      <Form className="space-y-8">
+        {activeTab === 'personal' && renderPersonalInfo()}
+        {activeTab === 'summary' && renderSummary()}
+        {activeTab === 'education' && renderEducation()}
+        {activeTab === 'experience' && renderExperience()}
+        {activeTab === 'projects' && renderProjects()}
+        {activeTab === 'certifications' && renderCertifications()}
+        {activeTab === 'skills' && renderSkills()}
+        {activeTab === 'achievements' && renderAchievements()}
+        {activeTab === 'languages' && renderLanguages()}
+        {activeTab === 'publications' && renderPublications()}
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Save Changes
+          </button>
         </div>
       </Form>
     </Formik>

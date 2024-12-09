@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { FaUpload } from 'react-icons/fa';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { ProfileData } from '@/types/profile';
 import mammoth from 'mammoth'; // For DOCX files
 import toast from 'react-hot-toast'; // Import toast
@@ -11,6 +12,8 @@ interface ResumeUploadProps {
 export default function ResumeUpload({ onUploadSuccess }: ResumeUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useUser();
+  const { getToken } = useAuth();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -61,11 +64,10 @@ export default function ResumeUpload({ onUploadSuccess }: ResumeUploadProps) {
 
       // Send extracted text and file name to the API
       const payload = {
-        filename: file.name,
-        text: extractedText,
+        resume_text: extractedText,
       };
 
-      const response = await fetch('https://us-central1-lma-project-15974.cloudfunctions.net/api/parse', {
+      const response = await fetch('http://localhost:8000/api/v1/resume/parse-resume', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,12 +81,113 @@ export default function ResumeUpload({ onUploadSuccess }: ResumeUploadProps) {
       }
 
       const data = await response.json();
-      // console.log('API Response:', JSON.stringify(data, null, 2));
+      console.log('API Response:', JSON.stringify(data, null, 2));
 
-      // The API response already has the correct structure with a result property
-      if (data && data.result) {
-        // Pass the data directly since it's already in the correct format
-        onUploadSuccess(data);
+      if (data && data.parsed_data) {
+        // Log raw date data for debugging
+        console.log('Raw Education Dates:', data.parsed_data.education?.map(edu => edu.dates));
+        console.log('Raw Work Experience Dates:', data.parsed_data.workExperience?.map(work => work.dates));
+
+        // Helper function to format date
+        const formatDate = (dateStr: string | undefined, isPresent: boolean = false): string => {
+          if (!dateStr || isPresent) return '';
+          // If date is already in YYYY-MM-DD format, return as is
+          if (dateStr.length === 10) return dateStr;
+          // If date is in YYYY-MM format, append -01 for day
+          if (dateStr.length === 7) return `${dateStr}-01`;
+          // If it's a longer format, take first 7 chars and append -01
+          return `${dateStr.substring(0, 7)}-01`;
+        };
+
+        // Transform the API response to match ProfileData structure
+        const transformedData = {
+          personal_info: {
+            name: data.parsed_data.personalInfo?.name || '',
+            email: data.parsed_data.personalInfo?.email || '',
+            phone: data.parsed_data.personalInfo?.phoneNumber || '',
+            location: data.parsed_data.personalInfo?.location || '',
+            linkedin_url: data.parsed_data.personalInfo?.linkedin || '',
+            github_url: data.parsed_data.personalInfo?.githubUrl || ''
+          },
+          summary: data.parsed_data.summary || '',
+          education: (data.parsed_data.education || []).map((edu: any) => ({
+            school_name: edu.organization || '',
+            degree: edu.accreditation || '',
+            start_date: formatDate(edu.dates?.startDate),
+            end_date: formatDate(edu.dates?.completionDate),
+            is_current: edu.dates?.isCurrent || false,
+            bullet_points: edu.achievements || []
+          })),
+          work_experience: (data.parsed_data.workExperience || []).map((work: any) => ({
+            job_title: work.jobTitle || '',
+            company_name: work.organization || '',
+            start_date: formatDate(work.dates?.startDate),
+            end_date: formatDate(work.dates?.completionDate, work.dates?.completionDate === 'Present'),
+            is_current: work.dates?.isCurrent || false,
+            bullet_points: work.bulletPoints || []
+          })),
+          skills: Object.entries(data.parsed_data.skills || {}).map(([category, skillList]: [string, any]) => ({
+            category,
+            skills: Array.isArray(skillList) ? skillList : []
+          })),
+          projects: [],
+          certifications: (data.parsed_data.certifications || []).map((cert: any) => ({
+            name: cert.name || '',
+            description: cert.description || '',
+          })),
+          achievements: [],
+          languages: [],
+          publications: []
+        };
+
+        console.log('ResumeUpload - Transformed data:', JSON.stringify(transformedData, null, 2));
+
+        // Ensure the data is properly structured before passing it to the parent
+        if (!transformedData.personal_info || !transformedData.education || !transformedData.work_experience) {
+          throw new Error('Missing required profile sections');
+        }
+
+        // Save profile to database
+        try {
+          const profilePayload = {
+            email: user?.primaryEmailAddress?.emailAddress || transformedData.personal_info.email,
+            clerk_id: user?.id,
+            resume: transformedData
+          };
+
+          console.log('Profile Payload:', JSON.stringify(profilePayload, null, 2));
+
+          const token = await getToken();
+          console.log('Auth Token:', token); // Log token for debugging
+
+          const profileResponse = await fetch('http://localhost:8000/api/v1/profiles', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            credentials: 'include', // Include credentials in the request
+            body: JSON.stringify(profilePayload),
+          });
+
+          if (!profileResponse.ok) {
+            const errorData = await profileResponse.text();
+            console.error('Profile API Error:', {
+              status: profileResponse.status,
+              statusText: profileResponse.statusText,
+              error: errorData
+            });
+            throw new Error(`Failed to save profile: ${profileResponse.status} ${errorData}`);
+          }
+
+          const profileData = await profileResponse.json();
+          console.log('Profile saved:', profileData);
+        } catch (error) {
+          console.error('Error saving profile:', error);
+          toast.error('Failed to save profile to database');
+        }
+
+        onUploadSuccess(transformedData);
         toast.success('Resume uploaded and parsed successfully');
       } else {
         console.error('Invalid API response structure:', data);
