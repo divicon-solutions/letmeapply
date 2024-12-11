@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { FaUpload } from 'react-icons/fa';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { ProfileData } from '@/types/profile';
@@ -7,11 +7,13 @@ import toast from 'react-hot-toast'; // Import toast
 
 interface ResumeUploadProps {
   onUploadSuccess: (data: ProfileData) => void;
+  isButton?: boolean;
 }
 
-export default function ResumeUpload({ onUploadSuccess }: ResumeUploadProps) {
+export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useUser();
   const { getToken } = useAuth();
 
@@ -201,6 +203,30 @@ export default function ResumeUpload({ onUploadSuccess }: ResumeUploadProps) {
     }
   };
 
+  if (isButton) {
+    return (
+      <>
+      <button
+        type="button"
+        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isUploading}
+      >
+        {isUploading ? 'Uploading...' : 'Re-upload Resume'}
+      </button>
+      <input
+        type="file"
+        className="hidden"
+        id="resume-upload"
+        ref={fileInputRef}
+        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        onChange={handleFileUpload}
+        disabled={isUploading}
+      />
+    </>
+    );
+  }
+
   return (
     <div className="w-full">
       <label
@@ -227,6 +253,8 @@ export default function ResumeUpload({ onUploadSuccess }: ResumeUploadProps) {
         <input
           type="file"
           className="hidden"
+          id="resume-upload"
+          ref={fileInputRef}
           accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           onChange={handleFileUpload}
           disabled={isUploading}

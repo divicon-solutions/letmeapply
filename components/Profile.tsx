@@ -205,11 +205,13 @@ const Profile = () => {
   const deleteIconClass = "w-4 h-4";
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl md:max-w-4xl sm:mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">Profile</h1>
-        <ResumeUpload onUploadSuccess={handleResumeData} />
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-center sm:py-2">
+      <div className="relative sm:max-w-xl md:max-w-4xl sm:mx-auto">
 
+        {
+          !initialValues?.personal_info?.name ? 
+        <ResumeUpload onUploadSuccess={handleResumeData} />
+        :
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -217,7 +219,13 @@ const Profile = () => {
           onSubmit={() => { }}
         >
           {({ values, setFieldValue }) => (
-            <Form className="space-y-6">
+            <Form className="space-y-3">
+              {/* Reupload resume button on the right */}
+
+              <div className="flex justify-end">
+              <ResumeUpload onUploadSuccess={handleResumeData} isButton />
+              </div>
+
               <div className="space-y-8">
                 {/* Personal Information */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
@@ -1440,6 +1448,8 @@ const Profile = () => {
             </Form>
           )}
         </Formik>
+        
+      }
       </div>
     </div >
   );
