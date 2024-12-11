@@ -2,7 +2,7 @@ export interface ProfileData {
   personal_info: {
     name: string;
     email: string;
-    phone_number: string;
+    phone: string;
     location: string;
     linkedin_url: string;
     github_url: string;
