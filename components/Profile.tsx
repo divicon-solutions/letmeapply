@@ -23,6 +23,7 @@ const Profile = () => {
   const { getToken } = useAuth();
   const { user } = useUser();
 
+
   useEffect(() => {
     const checkToken = async () => {
       try {
@@ -38,7 +39,7 @@ const Profile = () => {
     }
   }, [user, getToken]);
 
-  const updateSection = async (clerk_id: string, sectionName: string, content: any) => {
+  const updateSection = async (clerk_id: string, email: string, sectionName: string, content: any) => {
     try {
       const token = await getToken();
       if (!token) {
@@ -47,25 +48,22 @@ const Profile = () => {
       console.log('Token used for request:', token);
 
       const requestData = {
-        section: sectionName,
-        operation: "update",
-        content: content
+        email,
+        clerk_id,
+        resume: {
+          ...initialValues,
+          [sectionName]: content,
+        }
       };
 
       console.log('Request payload:', JSON.stringify(requestData, null, 2));
 
-      const response = await axios.patch(`http://localhost:8000/api/v1/profiles/clerk/${clerk_id}/resume`, requestData, {
+      const response = await axios.post(`http://localhost:8000/api/v1/profiles`, requestData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-
-      // Update local state after successful API call
-      setInitialValues(prevValues => ({
-        ...prevValues,
-        [sectionName]: content
-      }));
 
       console.log('API Response:', response.data);
 
@@ -91,26 +89,6 @@ const Profile = () => {
       }
       throw error;
     }
-  };
-
-  const initialData: ProfileData = {
-    personal_info: {
-      name: '',
-      email: '',
-      phone: '',
-      location: '',
-      linkedin_url: '',
-      github_url: ''
-    },
-    summary: '',
-    education: [],
-    work_experience: [],
-    skills: [],
-    projects: [],
-    certifications: [],
-    achievements: [],
-    languages: [],
-    publications: []
   };
 
   const validationSchema = Yup.object().shape({
@@ -196,7 +174,24 @@ const Profile = () => {
     certifications: [],
     achievements: [],
     languages: [],
-    publications: []
+    publications: [],
+    newEducation: {
+      school_name: '',
+      degree: '',
+      location: '',
+      start_date: '',
+      end_date: '',
+      is_current: false
+    },
+    newWorkExperience: {
+      company_name: '',
+      job_title: '',
+      location: '',
+      start_date: '',
+      end_date: '',
+      is_current: false,
+      bullet_points: []
+    }
   });
 
   useEffect(() => {
@@ -271,6 +266,7 @@ const Profile = () => {
   };
 
   const handleFieldBlur = async (fieldName: string, value: any, setFieldError: (field: string, message: string | undefined) => void) => {
+    console.log('Field blur:', fieldName, value);
     try {
       if (!user?.id) {
         console.error('User ID not available');
@@ -292,9 +288,15 @@ const Profile = () => {
         updatedSectionData = value;
       } else if (Array.isArray(initialValues[section])) {
         // Handle array sections (like education)
-        const arrayData = [...initialValues[section]];
-        if (index !== null) {
-          // Update existing item in array
+        const arrayData = [...currentSectionData];
+        console.log('Updating array item:', arrayData[index], index, field, value);
+        if (parts[parts.length - 2] === 'bullet_points') {
+          // Handle bullet points array
+          arrayData[index].bullet_points = [...arrayData[index].bullet_points, value];
+          updatedSectionData = arrayData
+        }
+        else if (index !== null) {
+          // Update specific item in array
           arrayData[index] = {
             ...arrayData[index],
             [field]: value
@@ -320,7 +322,7 @@ const Profile = () => {
       console.log('Value:', value);
       console.log('Updated data:', updatedSectionData);
 
-      await updateSection(user.id, section, updatedSectionData);
+      await updateSection(user.id, user.primaryEmailAddress?.emailAddress, section, updatedSectionData);
       toast.success(`${field || section} updated successfully`);
     } catch (error) {
       console.error('Error updating field:', error);
@@ -328,6 +330,321 @@ const Profile = () => {
       setFieldError(fieldName, 'Failed to save changes');
     }
   };
+
+  const handleAddEducation = (values, setFieldValue) => {
+    const newEducation = { ...values.newEducation };
+    setFieldValue('education', [...values.education, newEducation]);
+    setFieldValue('newEducation', {
+      school_name: '',
+      degree: '',
+      location: '',
+      start_date: '',
+      end_date: '',
+      is_current: false
+    });
+
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education, newEducation],
+        work_experience: [...initialValues.work_experience],
+        skills: [...initialValues.skills],
+        projects: [...initialValues.projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...initialValues.languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        closeDialog('education');
+        toast.success('Education added successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+
+  };
+
+  const handleNewWorkExperience = (values, setFieldValue) => {
+    const newWorkExperience = { ...values.newWorkExperience };
+    setFieldValue('work_experience', [...values.work_experience, newWorkExperience]);
+    setFieldValue('newWorkExperience', {
+      company_name: '',
+      job_title: '',
+      location: '',
+      start_date: '',
+      end_date: '',
+      is_current: false,
+      bullet_points: []
+    });
+
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education],
+        work_experience: [...initialValues.work_experience, newWorkExperience],
+        skills: [...initialValues.skills],
+        projects: [...initialValues.projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...initialValues.languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        closeDialog('workExperience');
+        toast.success('Work experience added successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  };
+
+  const handleDeleteWorkExperience = (sectionName: string, newWorkExperience: any[]) => {
+    console.log('Deleting work experience:', newWorkExperience);
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education],
+        work_experience: newWorkExperience,
+        skills: [...initialValues.skills],
+        projects: [...initialValues.projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...initialValues.languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        toast.success('Work experience deleted successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  }
+
+
+  const handleDeleteEducation = (sectionName: string, newEducation: any[]) => {
+    console.log('Deleting education:', newEducation);
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: newEducation,
+        work_experience: [...initialValues.work_experience],
+        skills: [...initialValues.skills],
+        projects: [...initialValues.projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...initialValues.languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  }
+
+  const handleSkillChange = (skills) => {
+    console.log('Skills updated:', skills);
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education],
+        work_experience: [...initialValues.work_experience],
+        skills: [...skills],
+        projects: [...initialValues.projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...initialValues.languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        toast.success('Skills updated successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  }
+
+  const handleProjectChange = (projects) => {
+    console.log('Projects updated:', projects);
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education],
+        work_experience: [...initialValues.work_experience],
+        skills: [...initialValues.skills],
+        projects: [...projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...initialValues.languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        toast.success('Projects updated successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  }
+
+  const handleCertificationChange = (certifications) => {
+    console.log('Certifications updated:', certifications);
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education],
+        work_experience: [...initialValues.work_experience],
+        skills: [...initialValues.skills],
+        projects: [...initialValues.projects],
+        certifications: [...certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...initialValues.languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        toast.success('Certifications updated successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  }
+
+  const handleAchievementChange = (achievements) => {
+    console.log('Achievements updated:', achievements);
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education],
+        work_experience: [...initialValues.work_experience],
+        skills: [...initialValues.skills],
+        projects: [...initialValues.projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...achievements],
+        languages: [...initialValues.languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        toast.success('Achievements updated successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  }
+
+  const handleLanguageChange = (languages) => {
+    console.log('Languages updated:', languages);
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education],
+        work_experience: [...initialValues.work_experience],
+        skills: [...initialValues.skills],
+        projects: [...initialValues.projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...languages],
+        publications: [...initialValues.publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        toast.success('Languages updated successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  }
+
+  const handlePublicationChange = (publications) => {
+    console.log('Publications updated:', publications);
+    const payload = {
+      email: user.primaryEmailAddress?.emailAddress,
+      clerk_id: user.id,
+      resume: {
+        personal_info: { ...initialValues.personal_info },
+        summary: initialValues.summary,
+        education: [...initialValues.education],
+        work_experience: [...initialValues.work_experience],
+        skills: [...initialValues.skills],
+        projects: [...initialValues.projects],
+        certifications: [...initialValues.certifications],
+        achievements: [...initialValues.achievements],
+        languages: [...initialValues.languages],
+        publications: [...publications]
+      }
+    }
+
+    axios.post('http://localhost:8000/api/v1/profiles', payload)
+      .then(response => {
+        console.log('API Response:', response.data);
+        toast.success('Publications updated successfully');
+      })
+      .catch(error => {
+        console.error('API Error:', error);
+      });
+  }
+
 
   // Render dialog component
   const Dialog = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
@@ -370,6 +687,7 @@ const Profile = () => {
             >
               {({ values, setFieldValue, setFieldError }) => (
                 <Form className="space-y-6">
+                  <ResumeUpload isButton onUploadSuccess={handleResumeData} />
                   <div className="space-y-8">
                     {/* Personal Information */}
                     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -471,7 +789,9 @@ const Profile = () => {
                         <button
                           type="button"
                           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          onClick={() => openDialog('education')}
+                          onClick={() => {
+                            openDialog('education')
+                          }}
                         >
                           <FaPlus className="mr-2" /> Add Education
                         </button>
@@ -479,13 +799,14 @@ const Profile = () => {
                       {values.education.map((edu, index) => (
                         <div key={index} className="border-b border-gray-200 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
                           <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-medium">{edu.school_name}</h3>
+                            <h3 className="text-lg font-medium">{edu?.school_name}</h3>
                             <button
                               type="button"
                               onClick={() => {
                                 const newEducation = [...values.education];
                                 newEducation.splice(index, 1);
                                 setFieldValue('education', newEducation);
+                                handleDeleteEducation('education', newEducation);
                               }}
                               className={deleteButtonClass}
                             >
@@ -542,7 +863,7 @@ const Profile = () => {
                               <Field
                                 type="date"
                                 name={`education.${index}.end_date`}
-                                disabled={values.education[index].is_current}
+                                disabled={values.education[index]?.is_current}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                   handleFieldBlur(`education.${index}.end_date`, e.target.value, setFieldError);
@@ -578,9 +899,7 @@ const Profile = () => {
                             type="text"
                             name="newEducation.school_name"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newEducation.school_name', e.target.value, setFieldError);
-                            }}
+                            placeholder="Enter school name"
                           />
                         </div>
                         <div>
@@ -589,9 +908,7 @@ const Profile = () => {
                             type="text"
                             name="newEducation.degree"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newEducation.degree', e.target.value, setFieldError);
-                            }}
+                            placeholder="Enter degree"
                           />
                         </div>
                         <div>
@@ -600,9 +917,7 @@ const Profile = () => {
                             type="text"
                             name="newEducation.location"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newEducation.location', e.target.value, setFieldError);
-                            }}
+                            placeholder="Enter location"
                           />
                         </div>
                         <div>
@@ -611,9 +926,6 @@ const Profile = () => {
                             type="date"
                             name="newEducation.start_date"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newEducation.start_date', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -621,11 +933,7 @@ const Profile = () => {
                           <Field
                             type="date"
                             name="newEducation.end_date"
-                            disabled={values.newEducation?.is_current}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newEducation.end_date', e.target.value, setFieldError);
-                            }}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
                         <div className="flex items-center">
@@ -633,9 +941,6 @@ const Profile = () => {
                             type="checkbox"
                             name="newEducation.is_current"
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newEducation.is_current', e.target.checked, setFieldError);
-                            }}
                           />
                           <label className="ml-2 block text-sm text-gray-900">Currently Studying</label>
                         </div>
@@ -643,22 +948,26 @@ const Profile = () => {
                       <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
                         <button
                           type="button"
-                          className="mt-3 flex-1 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          onClick={() => {
-                            const newEducation = values.newEducation;
-                            if (newEducation) {
-                              setFieldValue('education', [...values.education, { ...newEducation }]);
-                              setFieldValue('newEducation', {});
-                              closeDialog('education');
-                            }
-                          }}
+                          onClick={() => handleAddEducation(values, setFieldValue)}
+                          className="flex-1 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           Add
                         </button>
                         <button
                           type="button"
                           className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          onClick={() => closeDialog('education')}
+                          onClick={() => {
+                            handleNewEducation(newEducation);
+                            setNewEducation({ // Reset dialog fields after submission
+                              school_name: '',
+                              degree: '',
+                              location: '',
+                              start_date: '',
+                              end_date: '',
+                              is_current: false
+                            });
+                            closeDialog('education');
+                          }}
                         >
                           Cancel
                         </button>
@@ -687,9 +996,10 @@ const Profile = () => {
                             <button
                               type="button"
                               onClick={() => {
-                                const newExperience = [...values.work_experience];
-                                newExperience.splice(index, 1);
-                                setFieldValue('work_experience', newExperience);
+                                const newWorkExperience = [...values.work_experience];
+                                newWorkExperience.splice(index, 1);
+                                setFieldValue('work_experience', newWorkExperience);
+                                handleDeleteWorkExperience('work_experience', newWorkExperience);
                               }}
                               className={deleteButtonClass}
                             >
@@ -837,9 +1147,6 @@ const Profile = () => {
                             name="newWorkExperience.company_name"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="Enter company name"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newWorkExperience.company_name', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -849,9 +1156,6 @@ const Profile = () => {
                             name="newWorkExperience.job_title"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="Enter job title"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newWorkExperience.job_title', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -861,9 +1165,6 @@ const Profile = () => {
                             name="newWorkExperience.location"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="Enter location"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newWorkExperience.location', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -873,9 +1174,6 @@ const Profile = () => {
                               type="date"
                               name="newWorkExperience.start_date"
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                handleFieldBlur('newWorkExperience.start_date', e.target.value, setFieldError);
-                              }}
                             />
                           </div>
                           <div>
@@ -885,9 +1183,6 @@ const Profile = () => {
                               name="newWorkExperience.end_date"
                               disabled={values.newWorkExperience?.is_current}
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                handleFieldBlur('newWorkExperience.end_date', e.target.value, setFieldError);
-                              }}
                             />
                           </div>
                         </div>
@@ -896,9 +1191,6 @@ const Profile = () => {
                             type="checkbox"
                             name="newWorkExperience.is_current"
                             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newWorkExperience.is_current', e.target.checked, setFieldError);
-                            }}
                           />
                           <label className="ml-2 block text-sm text-gray-900">Currently Working Here</label>
                         </div>
@@ -913,9 +1205,6 @@ const Profile = () => {
                                   name={`newWorkExperience.bullet_points.${idx}`}
                                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-y"
                                   placeholder="Add accomplishment or responsibility..."
-                                  onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                                    handleFieldBlur(`newWorkExperience.bullet_points.${idx}`, e.target.value, setFieldError);
-                                  }}
                                 />
                                 <button
                                   type="button"
@@ -947,27 +1236,7 @@ const Profile = () => {
                         <button
                           type="button"
                           className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2"
-                          onClick={() => {
-                            const newWorkExperience = values.newWorkExperience;
-                            if (newWorkExperience?.company_name && newWorkExperience?.job_title) {
-                              const workExp = {
-                                ...newWorkExperience,
-                                bullet_points: newWorkExperience.bullet_points?.filter(point => point.trim()) || [],
-                                end_date: newWorkExperience.is_current ? '' : newWorkExperience.end_date
-                              };
-                              setFieldValue('work_experience', [...values.work_experience, workExp]);
-                              setFieldValue('newWorkExperience', {
-                                company_name: '',
-                                job_title: '',
-                                location: '',
-                                start_date: '',
-                                end_date: '',
-                                is_current: false,
-                                bullet_points: ['']
-                              });
-                              closeDialog('workExperience');
-                            }
-                          }}
+                          onClick={() => { handleNewWorkExperience(values, setFieldValue) }}
                         >
                           Add
                         </button>
@@ -1006,6 +1275,7 @@ const Profile = () => {
                                 const newSkills = [...values.skills];
                                 newSkills.splice(categoryIndex, 1);
                                 setFieldValue('skills', newSkills);
+                                handleSkillChange(newSkills);
                               }}
                               className={deleteButtonClass}
                             >
@@ -1028,6 +1298,7 @@ const Profile = () => {
                                       (_, index) => index !== skillIndex
                                     );
                                     setFieldValue('skills', newSkills);
+                                    handleSkillChange(newSkills);
                                   }}
                                 >
                                   <FaTimes className="w-3 h-3" />
@@ -1043,6 +1314,7 @@ const Profile = () => {
                                   const newSkills = [...values.skills];
                                   newSkills[categoryIndex].skills = [...skillCategory.skills, skill];
                                   setFieldValue('skills', newSkills);
+                                  handleSkillChange(newSkills);
                                 }
                               }}
                             >
@@ -1067,9 +1339,6 @@ const Profile = () => {
                             name="newSkill.category"
                             placeholder="e.g., Programming Languages, Frameworks, Tools"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newSkill.category', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -1079,9 +1348,6 @@ const Profile = () => {
                             name="newSkill.skills"
                             placeholder="Enter comma-separated skills"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newSkill.skills', e.target.value, setFieldError);
-                            }}
                           />
                           <p className="mt-1 text-sm text-gray-500">Separate multiple skills with commas (e.g., React, Node.js, TypeScript)</p>
                         </div>
@@ -1103,6 +1369,7 @@ const Profile = () => {
 
                               setFieldValue('skills', [...(values.skills || []), newSkillCategory]);
                               setFieldValue('newSkill', { category: '', skills: '' });
+                              handleSkillChange([...(values.skills || []), newSkillCategory]);
                               closeDialog('skills');
                             }
                           }}
@@ -1141,93 +1408,95 @@ const Profile = () => {
                                 const newProjects = [...values.projects];
                                 newProjects.splice(index, 1);
                                 setFieldValue('projects', newProjects);
+                                handleProjectChange(newProjects);
                               }}
                               className={deleteButtonClass}
                             >
                               <FaTrash className={deleteIconClass} />
                             </button>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">Project Name</label>
-                              <Field
-                                type="text"
-                                name={`projects.${index}.project_name`}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`projects.${index}.project_name`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">Organization</label>
-                              <Field
-                                type="text"
-                                name={`projects.${index}.organization`}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`projects.${index}.organization`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">Location</label>
-                              <Field
-                                type="text"
-                                name={`projects.${index}.location`}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`projects.${index}.location`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
-                                <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                                <label className="block text-sm font-medium text-gray-700">Project Name</label>
                                 <Field
-                                  type="month"
-                                  name={`projects.${index}.start_date`}
+                                  type="text"
+                                  name={`projects.${index}.project_name`}
                                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`projects.${index}.start_date`, e.target.value, setFieldError);
+                                    handleFieldBlur(`projects.${index}.project_name`, e.target.value, setFieldError);
                                   }}
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium text-gray-700">Completion Date</label>
+                                <label className="block text-sm font-medium text-gray-700">Organization</label>
                                 <Field
-                                  type="month"
-                                  name={`projects.${index}.end_date`}
-                                  disabled={proj.is_current}
-                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                  type="text"
+                                  name={`projects.${index}.organization`}
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`projects.${index}.end_date`, e.target.value, setFieldError);
+                                    handleFieldBlur(`projects.${index}.organization`, e.target.value, setFieldError);
                                   }}
                                 />
                               </div>
-                            </div>
-                            <div>
-                              <label className="flex items-center space-x-2">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">Location</label>
                                 <Field
-                                  type="checkbox"
-                                  name={`projects.${index}.is_current`}
-                                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                  type="text"
+                                  name={`projects.${index}.location`}
+                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`projects.${index}.is_current`, e.target.checked, setFieldError);
+                                    handleFieldBlur(`projects.${index}.location`, e.target.value, setFieldError);
                                   }}
                                 />
-                                <span className="text-sm font-medium text-gray-700">This is my current project</span>
-                              </label>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                                  <Field
+                                    type="month"
+                                    name={`projects.${index}.start_date`}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                                      handleFieldBlur(`projects.${index}.start_date`, e.target.value, setFieldError);
+                                    }}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700">Completion Date</label>
+                                  <Field
+                                    type="month"
+                                    name={`projects.${index}.end_date`}
+                                    disabled={proj.is_current}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                                      handleFieldBlur(`projects.${index}.end_date`, e.target.value, setFieldError);
+                                    }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Bullet Points</label>
-                              <div className="space-y-2">
+                            <div className="flex items-center">
+                              <Field
+                                type="checkbox"
+                                name={`projects.${index}.is_current`}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                                  handleFieldBlur(`projects.${index}.is_current`, e.target.checked, setFieldError);
+                                }}
+                              />
+                              <label className="ml-2 text-sm text-gray-900">This is my current project</label>
+                            </div>
+                            <div className="space-y-4">
+                              <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
+                              <div className="space-y-3">
                                 {proj.bullet_points?.map((point, idx) => (
-                                  <div key={idx} className="flex items-center space-x-2">
+                                  <div key={idx} className="flex items-center">
                                     <Field
                                       type="text"
+                                      rows={2}
                                       name={`projects.${index}.bullet_points.${idx}`}
-                                      className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-y"
                                       onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                         handleFieldBlur(`projects.${index}.bullet_points.${idx}`, e.target.value, setFieldError);
                                       }}
@@ -1235,9 +1504,10 @@ const Profile = () => {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const newPoints = [...(proj.bullet_points || [])];
-                                        newPoints.splice(idx, 1);
-                                        setFieldValue(`projects.${index}.bullet_points`, newPoints);
+                                        const newProjects = [...values.projects];
+                                        newProjects[index].bullet_points.splice(idx, 1);
+                                        setFieldValue('projects', newProjects);
+                                        handleProjectChange(newProjects);
                                       }}
                                       className={deleteButtonClass}
                                     >
@@ -1248,7 +1518,7 @@ const Profile = () => {
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const currentPoints = proj.bullet_points || [];
+                                    const currentPoints = values.projects[index].bullet_points || [];
                                     setFieldValue(`projects.${index}.bullet_points`, [...currentPoints, '']);
                                   }}
                                   className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -1275,9 +1545,6 @@ const Profile = () => {
                             type="text"
                             name="newProject.project_name"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newProject.project_name', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -1286,9 +1553,6 @@ const Profile = () => {
                             type="text"
                             name="newProject.organization"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newProject.organization', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -1297,9 +1561,6 @@ const Profile = () => {
                             type="text"
                             name="newProject.location"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newProject.location', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -1309,9 +1570,6 @@ const Profile = () => {
                               type="month"
                               name="newProject.start_date"
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                handleFieldBlur('newProject.start_date', e.target.value, setFieldError);
-                              }}
                             />
                           </div>
                           <div>
@@ -1321,9 +1579,6 @@ const Profile = () => {
                               name="newProject.end_date"
                               disabled={values.newProject?.is_current}
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                handleFieldBlur('newProject.end_date', e.target.value, setFieldError);
-                              }}
                             />
                           </div>
                         </div>
@@ -1333,9 +1588,6 @@ const Profile = () => {
                               type="checkbox"
                               name="newProject.is_current"
                               className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                handleFieldBlur('newProject.is_current', e.target.checked, setFieldError);
-                              }}
                             />
                             <span className="text-sm font-medium text-gray-700">This is my current project</span>
                           </label>
@@ -1349,9 +1601,6 @@ const Profile = () => {
                                   type="text"
                                   name={`newProject.bullet_points.${idx}`}
                                   className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`newProject.bullet_points.${idx}`, e.target.value, setFieldError);
-                                  }}
                                 />
                                 <button
                                   type="button"
@@ -1390,7 +1639,8 @@ const Profile = () => {
                                 ...newProject,
                                 bullet_points: newProject.bullet_points || []
                               }]);
-                              setFieldValue('newProject', { bullet_points: [] });
+                              handleProjectChange([...values.projects, { ...newProject, bullet_points: newProject.bullet_points || [] }]);
+                              setFieldValue('newProject', {});
                               closeDialog('projects');
                             }
                           }}
@@ -1429,6 +1679,7 @@ const Profile = () => {
                                 const newCertifications = [...values.certifications];
                                 newCertifications.splice(index, 1);
                                 setFieldValue('certifications', newCertifications);
+                                handleCertificationChange(newCertifications);
                               }}
                               className={deleteButtonClass}
                             >
@@ -1476,9 +1727,6 @@ const Profile = () => {
                             type="text"
                             name="newCertification.name"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newCertification.name', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -1488,9 +1736,6 @@ const Profile = () => {
                             name="newCertification.description"
                             rows={3}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                              handleFieldBlur('newCertification.description', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                       </div>
@@ -1503,6 +1748,7 @@ const Profile = () => {
                             if (newCertification) {
                               setFieldValue('certifications', [...values.certifications, { ...newCertification }]);
                               setFieldValue('newCertification', {});
+                              handleCertificationChange([...values.certifications, { ...newCertification }]);
                               closeDialog('certifications');
                             }
                           }}
@@ -1541,6 +1787,7 @@ const Profile = () => {
                                 const newAchievements = [...values.achievements];
                                 newAchievements.splice(index, 1);
                                 setFieldValue('achievements', newAchievements);
+                                handleAchievementChange(newAchievements);
                               }}
                               className={deleteButtonClass}
                             >
@@ -1588,9 +1835,6 @@ const Profile = () => {
                             type="text"
                             name="newAchievement.name"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newAchievement.name', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -1600,9 +1844,6 @@ const Profile = () => {
                             name="newAchievement.description"
                             rows={3}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                              handleFieldBlur('newAchievement.description', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                       </div>
@@ -1615,6 +1856,7 @@ const Profile = () => {
                             if (newAchievement) {
                               setFieldValue('achievements', [...values.achievements, { ...newAchievement }]);
                               setFieldValue('newAchievement', {});
+                              handleAchievementChange([...values.achievements, { ...newAchievement }]);
                               closeDialog('achievements');
                             }
                           }}
@@ -1653,6 +1895,7 @@ const Profile = () => {
                                 const newLanguages = [...values.languages];
                                 newLanguages.splice(index, 1);
                                 setFieldValue('languages', newLanguages);
+                                handleLanguageChange(newLanguages);
                               }}
                               className={deleteButtonClass}
                             >
@@ -1706,9 +1949,6 @@ const Profile = () => {
                             type="text"
                             name="newLanguage.name"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newLanguage.name', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -1717,9 +1957,6 @@ const Profile = () => {
                             as="select"
                             name="newLanguage.description"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLSelectElement>) => {
-                              handleFieldBlur('newLanguage.description', e.target.value, setFieldError);
-                            }}
                           >
                             <option value="">Select Proficiency</option>
                             <option value="Native">Native</option>
@@ -1738,6 +1975,7 @@ const Profile = () => {
                             if (newLanguage) {
                               setFieldValue('languages', [...values.languages, { ...newLanguage }]);
                               setFieldValue('newLanguage', {});
+                              handleLanguageChange([...values.languages, { ...newLanguage }]);
                               closeDialog('languages');
                             }
                           }}
@@ -1776,6 +2014,7 @@ const Profile = () => {
                                 const newPublications = [...values.publications];
                                 newPublications.splice(index, 1);
                                 setFieldValue('publications', newPublications);
+                                handlePublicationChange(newPublications);
                               }}
                               className={deleteButtonClass}
                             >
@@ -1829,9 +2068,6 @@ const Profile = () => {
                             type="text"
                             name="newPublication.title"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('newPublication.title', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -1841,9 +2077,6 @@ const Profile = () => {
                             name="newPublication.description"
                             rows={3}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                              handleFieldBlur('newPublication.description', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                         <div>
@@ -1854,9 +2087,6 @@ const Profile = () => {
                             rows={2}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             placeholder="Enter authors (comma separated)"
-                            onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                              handleFieldBlur('newPublication.authors', e.target.value, setFieldError);
-                            }}
                           />
                         </div>
                       </div>
@@ -1875,6 +2105,7 @@ const Profile = () => {
                                 ...newPublication,
                                 authors
                               }]);
+                              handlePublicationChange([...values.publications, { ...newPublication, authors }]);
                               setFieldValue('newPublication', {});
                               closeDialog('publications');
                             }
