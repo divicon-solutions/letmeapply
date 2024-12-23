@@ -66,6 +66,7 @@ const Profile = () => {
       });
 
       console.log('API Response:', response.data);
+      setInitialValues(response.data.resume);
 
       return response.data;
     } catch (error) {
@@ -247,15 +248,7 @@ const Profile = () => {
     // console.log('Profile - Current profile data:', JSON.stringify(initialValues, null, 2));
   }, [initialValues]);
 
-  const handleResumeData = async (data: ProfileData) => {
-    try {
-      setInitialValues(data);
-      toast.success('Resume data loaded successfully');
-    } catch (error) {
-      console.error('Error handling resume data:', error);
-      toast.error('Failed to load resume data');
-    }
-  };
+
 
   const openDialog = (type: keyof DialogState) => {
     setDialogOpen({ ...dialogOpen, [type]: true });
@@ -266,62 +259,31 @@ const Profile = () => {
   };
 
   const handleFieldBlur = async (fieldName: string, value: any, setFieldError: (field: string, message: string | undefined) => void) => {
-    console.log('Field blur:', fieldName, value);
+    if (!user?.id) return;
+
+    const parts = fieldName.split('.');
+    const section = parts[0];
+    const index = parts.length > 2 ? parseInt(parts[1]) : null;
+    const field = parts[parts.length - 1];
+
+    const currentSectionData = initialValues[section] || {};
+    let updatedSectionData;
+
+    if (section === 'summary') {
+      updatedSectionData = value;
+    } else if (Array.isArray(initialValues[section])) {
+      const arrayData = [...currentSectionData];
+      if (index !== null) {
+        arrayData[index] = { ...arrayData[index], [field]: value };
+      }
+      updatedSectionData = arrayData;
+    } else if (field) {
+      updatedSectionData = { ...currentSectionData, [field]: value };
+    } else {
+      updatedSectionData = value;
+    }
+
     try {
-      if (!user?.id) {
-        console.error('User ID not available');
-        return;
-      }
-
-      const parts = fieldName.split('.');
-      const section = parts[0];
-      const index = parts.length > 2 ? parseInt(parts[1]) : null;
-      const field = parts[parts.length - 1];
-
-      // Get the current section data from initialValues
-      const currentSectionData = initialValues[section] || {};
-
-      // Handle different types of sections
-      let updatedSectionData;
-      if (section === 'summary') {
-        // Handle summary as a direct string value
-        updatedSectionData = value;
-      } else if (Array.isArray(initialValues[section])) {
-        // Handle array sections (like education)
-        const arrayData = [...currentSectionData];
-        console.log('Updating array item:', arrayData[index], index, field, value);
-        if (parts[parts.length - 2] === 'bullet_points') {
-          // Handle bullet points array
-          arrayData[index].bullet_points = [...arrayData[index].bullet_points, value];
-          updatedSectionData = arrayData
-        }
-        else if (index !== null) {
-          // Update specific item in array
-          arrayData[index] = {
-            ...arrayData[index],
-            [field]: value
-          };
-          updatedSectionData = arrayData;
-        } else {
-          // Add new item to array
-          updatedSectionData = arrayData;
-        }
-      } else if (field) {
-        // Handle object sections (like personal_info)
-        updatedSectionData = {
-          ...currentSectionData,
-          [field]: value
-        };
-      } else {
-        // Handle direct value updates
-        updatedSectionData = value;
-      }
-
-      console.log('Updating section:', section);
-      console.log('Field:', field);
-      console.log('Value:', value);
-      console.log('Updated data:', updatedSectionData);
-
       await updateSection(user.id, user.primaryEmailAddress?.emailAddress, section, updatedSectionData);
       toast.success(`${field || section} updated successfully`);
     } catch (error) {
@@ -331,60 +293,37 @@ const Profile = () => {
     }
   };
 
-  const handleAddEducation = (values, setFieldValue) => {
-    const newEducation = { ...values.newEducation };
-    setFieldValue('education', [...values.education, newEducation]);
-    setFieldValue('newEducation', {
-      school_name: '',
-      degree: '',
-      location: '',
-      start_date: '',
-      end_date: '',
-      is_current: false
-    });
-
+  const handleDelete = async (sectionName: string, newData: any[], sectionType: string) => {
+    console.log('handleDelete', sectionName, newData, sectionType);
     const payload = {
       email: user.primaryEmailAddress?.emailAddress,
       clerk_id: user.id,
       resume: {
         personal_info: { ...initialValues.personal_info },
         summary: initialValues.summary,
-        education: [...initialValues.education, newEducation],
-        work_experience: [...initialValues.work_experience],
-        skills: [...initialValues.skills],
-        projects: [...initialValues.projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...initialValues.languages],
-        publications: [...initialValues.publications]
-      }
+        education: sectionType === 'education' ? newData : [...initialValues.education],
+        work_experience: sectionType === 'work_experience' ? newData : [...initialValues.work_experience],
+        skills: sectionType === 'skills' ? newData : [...initialValues.skills],
+        projects: sectionType === 'projects' ? newData : [...initialValues.projects],
+        certifications: sectionType === 'certifications' ? newData : [...initialValues.certifications],
+        achievements: sectionType === 'achievements' ? newData : [...initialValues.achievements],
+        languages: sectionType === 'languages' ? newData : [...initialValues.languages],
+        publications: sectionType === 'publications' ? newData : [...initialValues.publications],
+      },
+    };
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/v1/profiles', payload);
+      console.log('API Response:', response.data);
+      toast.success(`${sectionType.charAt(0).toUpperCase() + sectionType.slice(1)} deleted successfully`);
+      setInitialValues(response.data.resume);
+    } catch (error) {
+      console.error('API Error:', error);
     }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        closeDialog('education');
-        toast.success('Education added successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-
   };
 
-  const handleNewWorkExperience = (values, setFieldValue) => {
-    const newWorkExperience = { ...values.newWorkExperience };
-    setFieldValue('work_experience', [...values.work_experience, newWorkExperience]);
-    setFieldValue('newWorkExperience', {
-      company_name: '',
-      job_title: '',
-      location: '',
-      start_date: '',
-      end_date: '',
-      is_current: false,
-      bullet_points: []
-    });
-
+  const handleChange = async (section: string, newData: any[]) => {
+    console.log('handleChange', section, newData);
     const payload = {
       email: user.primaryEmailAddress?.emailAddress,
       clerk_id: user.id,
@@ -392,258 +331,32 @@ const Profile = () => {
         personal_info: { ...initialValues.personal_info },
         summary: initialValues.summary,
         education: [...initialValues.education],
-        work_experience: [...initialValues.work_experience, newWorkExperience],
+        work_experience: [...initialValues.work_experience],
         skills: [...initialValues.skills],
         projects: [...initialValues.projects],
         certifications: [...initialValues.certifications],
         achievements: [...initialValues.achievements],
         languages: [...initialValues.languages],
-        publications: [...initialValues.publications]
-      }
-    }
+        publications: [...initialValues.publications],
+      },
+    };
 
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        closeDialog('workExperience');
-        toast.success('Work experience added successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
+    payload.resume[section] = newData;
+
+    try {
+      const response = await axios.post('http://localhost:8000/api/v1/profiles', payload);
+      console.log('API Response:', response.data);
+      toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} updated successfully`);
+      setInitialValues(response.data.resume);
+    } catch (error) {
+      console.error('API Error:', error);
+    }
   };
 
-  const handleDeleteWorkExperience = (sectionName: string, newWorkExperience: any[]) => {
-    console.log('Deleting work experience:', newWorkExperience);
-    const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
-      resume: {
-        personal_info: { ...initialValues.personal_info },
-        summary: initialValues.summary,
-        education: [...initialValues.education],
-        work_experience: newWorkExperience,
-        skills: [...initialValues.skills],
-        projects: [...initialValues.projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...initialValues.languages],
-        publications: [...initialValues.publications]
-      }
-    }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        toast.success('Work experience deleted successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-  }
-
-
-  const handleDeleteEducation = (sectionName: string, newEducation: any[]) => {
-    console.log('Deleting education:', newEducation);
-    const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
-      resume: {
-        personal_info: { ...initialValues.personal_info },
-        summary: initialValues.summary,
-        education: newEducation,
-        work_experience: [...initialValues.work_experience],
-        skills: [...initialValues.skills],
-        projects: [...initialValues.projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...initialValues.languages],
-        publications: [...initialValues.publications]
-      }
-    }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-  }
-
-  const handleSkillChange = (skills) => {
-    console.log('Skills updated:', skills);
-    const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
-      resume: {
-        personal_info: { ...initialValues.personal_info },
-        summary: initialValues.summary,
-        education: [...initialValues.education],
-        work_experience: [...initialValues.work_experience],
-        skills: [...skills],
-        projects: [...initialValues.projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...initialValues.languages],
-        publications: [...initialValues.publications]
-      }
-    }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        toast.success('Skills updated successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-  }
-
-  const handleProjectChange = (projects) => {
-    console.log('Projects updated:', projects);
-    const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
-      resume: {
-        personal_info: { ...initialValues.personal_info },
-        summary: initialValues.summary,
-        education: [...initialValues.education],
-        work_experience: [...initialValues.work_experience],
-        skills: [...initialValues.skills],
-        projects: [...projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...initialValues.languages],
-        publications: [...initialValues.publications]
-      }
-    }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        toast.success('Projects updated successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-  }
-
-  const handleCertificationChange = (certifications) => {
-    console.log('Certifications updated:', certifications);
-    const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
-      resume: {
-        personal_info: { ...initialValues.personal_info },
-        summary: initialValues.summary,
-        education: [...initialValues.education],
-        work_experience: [...initialValues.work_experience],
-        skills: [...initialValues.skills],
-        projects: [...initialValues.projects],
-        certifications: [...certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...initialValues.languages],
-        publications: [...initialValues.publications]
-      }
-    }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        toast.success('Certifications updated successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-  }
-
-  const handleAchievementChange = (achievements) => {
-    console.log('Achievements updated:', achievements);
-    const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
-      resume: {
-        personal_info: { ...initialValues.personal_info },
-        summary: initialValues.summary,
-        education: [...initialValues.education],
-        work_experience: [...initialValues.work_experience],
-        skills: [...initialValues.skills],
-        projects: [...initialValues.projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...achievements],
-        languages: [...initialValues.languages],
-        publications: [...initialValues.publications]
-      }
-    }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        toast.success('Achievements updated successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-  }
-
-  const handleLanguageChange = (languages) => {
-    console.log('Languages updated:', languages);
-    const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
-      resume: {
-        personal_info: { ...initialValues.personal_info },
-        summary: initialValues.summary,
-        education: [...initialValues.education],
-        work_experience: [...initialValues.work_experience],
-        skills: [...initialValues.skills],
-        projects: [...initialValues.projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...languages],
-        publications: [...initialValues.publications]
-      }
-    }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        toast.success('Languages updated successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-  }
-
-  const handlePublicationChange = (publications) => {
-    console.log('Publications updated:', publications);
-    const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
-      resume: {
-        personal_info: { ...initialValues.personal_info },
-        summary: initialValues.summary,
-        education: [...initialValues.education],
-        work_experience: [...initialValues.work_experience],
-        skills: [...initialValues.skills],
-        projects: [...initialValues.projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...initialValues.languages],
-        publications: [...publications]
-      }
-    }
-
-    axios.post('http://localhost:8000/api/v1/profiles', payload)
-      .then(response => {
-        console.log('API Response:', response.data);
-        toast.success('Publications updated successfully');
-      })
-      .catch(error => {
-        console.error('API Error:', error);
-      });
-  }
+  const handleResumeData = (data: any) => {
+    setInitialValues(data);
+    toast.success('Resume data loaded successfully');
+  };
 
 
   // Render dialog component
@@ -796,7 +509,7 @@ const Profile = () => {
                           <FaPlus className="mr-2" /> Add Education
                         </button>
                       </div>
-                      {values.education.map((edu, index) => (
+                      {values?.education?.map((edu, index) => (
                         <div key={index} className="border-b border-gray-200 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
                           <div className="flex justify-between items-start mb-4">
                             <h3 className="text-lg font-medium">{edu?.school_name}</h3>
@@ -806,7 +519,7 @@ const Profile = () => {
                                 const newEducation = [...values.education];
                                 newEducation.splice(index, 1);
                                 setFieldValue('education', newEducation);
-                                handleDeleteEducation('education', newEducation);
+                                handleDelete('education', newEducation, 'education');
                               }}
                               className={deleteButtonClass}
                             >
@@ -948,7 +661,19 @@ const Profile = () => {
                       <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
                         <button
                           type="button"
-                          onClick={() => handleAddEducation(values, setFieldValue)}
+                          onClick={() => {
+                            const newEducation = { ...values.newEducation };
+                            handleChange('education', [...values.education, newEducation]);
+                            setFieldValue('newEducation', {
+                              school_name: '',
+                              degree: '',
+                              location: '',
+                              start_date: '',
+                              end_date: '',
+                              is_current: false
+                            });
+                            closeDialog('education');
+                          }}
                           className="flex-1 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           Add
@@ -957,15 +682,6 @@ const Profile = () => {
                           type="button"
                           className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           onClick={() => {
-                            handleNewEducation(newEducation);
-                            setNewEducation({ // Reset dialog fields after submission
-                              school_name: '',
-                              degree: '',
-                              location: '',
-                              start_date: '',
-                              end_date: '',
-                              is_current: false
-                            });
                             closeDialog('education');
                           }}
                         >
@@ -999,7 +715,7 @@ const Profile = () => {
                                 const newWorkExperience = [...values.work_experience];
                                 newWorkExperience.splice(index, 1);
                                 setFieldValue('work_experience', newWorkExperience);
-                                handleDeleteWorkExperience('work_experience', newWorkExperience);
+                                handleDelete('work_experience', newWorkExperience, 'work_experience');
                               }}
                               className={deleteButtonClass}
                             >
@@ -1236,7 +952,19 @@ const Profile = () => {
                         <button
                           type="button"
                           className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2"
-                          onClick={() => { handleNewWorkExperience(values, setFieldValue) }}
+                          onClick={() => {
+                            const newWorkExperience = { ...values.newWorkExperience };
+                            handleChange('work_experience', [...values.work_experience, newWorkExperience]);
+                            setFieldValue('newWorkExperience', {
+                              company_name: '',
+                              job_title: '',
+                              location: '',
+                              start_date: '',
+                              end_date: '',
+                              is_current: false
+                            });
+                            closeDialog('workExperience');
+                          }}
                         >
                           Add
                         </button>
@@ -1275,7 +1003,7 @@ const Profile = () => {
                                 const newSkills = [...values.skills];
                                 newSkills.splice(categoryIndex, 1);
                                 setFieldValue('skills', newSkills);
-                                handleSkillChange(newSkills);
+                                handleDelete('skills', newSkills, 'skills');
                               }}
                               className={deleteButtonClass}
                             >
@@ -1298,7 +1026,7 @@ const Profile = () => {
                                       (_, index) => index !== skillIndex
                                     );
                                     setFieldValue('skills', newSkills);
-                                    handleSkillChange(newSkills);
+                                    handleDelete('skills', newSkills, 'skills');
                                   }}
                                 >
                                   <FaTimes className="w-3 h-3" />
@@ -1314,7 +1042,7 @@ const Profile = () => {
                                   const newSkills = [...values.skills];
                                   newSkills[categoryIndex].skills = [...skillCategory.skills, skill];
                                   setFieldValue('skills', newSkills);
-                                  handleSkillChange(newSkills);
+                                  handleChange('skills', newSkills);
                                 }
                               }}
                             >
@@ -1369,7 +1097,7 @@ const Profile = () => {
 
                               setFieldValue('skills', [...(values.skills || []), newSkillCategory]);
                               setFieldValue('newSkill', { category: '', skills: '' });
-                              handleSkillChange([...(values.skills || []), newSkillCategory]);
+                              handleChange('skills', [...(values.skills || []), newSkillCategory]);
                               closeDialog('skills');
                             }
                           }}
@@ -1408,7 +1136,7 @@ const Profile = () => {
                                 const newProjects = [...values.projects];
                                 newProjects.splice(index, 1);
                                 setFieldValue('projects', newProjects);
-                                handleProjectChange(newProjects);
+                                handleDelete('projects', newProjects, 'projects');
                               }}
                               className={deleteButtonClass}
                             >
@@ -1639,8 +1367,16 @@ const Profile = () => {
                                 ...newProject,
                                 bullet_points: newProject.bullet_points || []
                               }]);
-                              handleProjectChange([...values.projects, { ...newProject, bullet_points: newProject.bullet_points || [] }]);
-                              setFieldValue('newProject', {});
+                              handleChange('projects', [...values.projects, { ...newProject, bullet_points: newProject.bullet_points || [] }]);
+                              setFieldValue('newProject', {
+                                project_name: '',
+                                organization: '',
+                                location: '',
+                                start_date: '',
+                                end_date: '',
+                                is_current: false,
+                                bullet_points: []
+                              });
                               closeDialog('projects');
                             }
                           }}
@@ -1679,7 +1415,7 @@ const Profile = () => {
                                 const newCertifications = [...values.certifications];
                                 newCertifications.splice(index, 1);
                                 setFieldValue('certifications', newCertifications);
-                                handleCertificationChange(newCertifications);
+                                handleDelete('certifications', newCertifications, 'certifications');
                               }}
                               className={deleteButtonClass}
                             >
@@ -1748,7 +1484,7 @@ const Profile = () => {
                             if (newCertification) {
                               setFieldValue('certifications', [...values.certifications, { ...newCertification }]);
                               setFieldValue('newCertification', {});
-                              handleCertificationChange([...values.certifications, { ...newCertification }]);
+                              handleChange('certifications', [...values.certifications, { ...newCertification }]);
                               closeDialog('certifications');
                             }
                           }}
@@ -1787,7 +1523,7 @@ const Profile = () => {
                                 const newAchievements = [...values.achievements];
                                 newAchievements.splice(index, 1);
                                 setFieldValue('achievements', newAchievements);
-                                handleAchievementChange(newAchievements);
+                                handleDelete('achievements', newAchievements, 'achievements');
                               }}
                               className={deleteButtonClass}
                             >
@@ -1856,7 +1592,7 @@ const Profile = () => {
                             if (newAchievement) {
                               setFieldValue('achievements', [...values.achievements, { ...newAchievement }]);
                               setFieldValue('newAchievement', {});
-                              handleAchievementChange([...values.achievements, { ...newAchievement }]);
+                              handleChange('achievements', [...values.achievements, { ...newAchievement }]);
                               closeDialog('achievements');
                             }
                           }}
@@ -1895,7 +1631,7 @@ const Profile = () => {
                                 const newLanguages = [...values.languages];
                                 newLanguages.splice(index, 1);
                                 setFieldValue('languages', newLanguages);
-                                handleLanguageChange(newLanguages);
+                                handleDelete('languages', newLanguages, 'languages');
                               }}
                               className={deleteButtonClass}
                             >
@@ -1975,7 +1711,7 @@ const Profile = () => {
                             if (newLanguage) {
                               setFieldValue('languages', [...values.languages, { ...newLanguage }]);
                               setFieldValue('newLanguage', {});
-                              handleLanguageChange([...values.languages, { ...newLanguage }]);
+                              handleChange('languages', [...values.languages, { ...newLanguage }]);
                               closeDialog('languages');
                             }
                           }}
@@ -2014,7 +1750,7 @@ const Profile = () => {
                                 const newPublications = [...values.publications];
                                 newPublications.splice(index, 1);
                                 setFieldValue('publications', newPublications);
-                                handlePublicationChange(newPublications);
+                                handleDelete('publications', newPublications, 'publications');
                               }}
                               className={deleteButtonClass}
                             >
@@ -2105,7 +1841,7 @@ const Profile = () => {
                                 ...newPublication,
                                 authors
                               }]);
-                              handlePublicationChange([...values.publications, { ...newPublication, authors }]);
+                              handleChange('publications', [...values.publications, { ...newPublication, authors }]);
                               setFieldValue('newPublication', {});
                               closeDialog('publications');
                             }
