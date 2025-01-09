@@ -1,34 +1,38 @@
 export interface ProfileData {
-  personal_info: {
+  personalInfo: {
     name: string;
     email: string;
-    phone: string;
-    location: string;
-    linkedin_url: string;
-    github_url: string;
+    phoneNumber: string;
+    location: string | null;
+    linkedin: string;
+    githubUrl: string;
   };
   summary: string;
   education: Array<{
-    school_name: string;
-    degree: string;
+    organization: string;
+    accreditation: string;
     location: string;
-    start_date: string;
-    end_date: string;
-    is_current: boolean;
+    dates: {
+      startDate: string; // YYYY-MM format
+      completionDate: string; // YYYY-MM format
+      isCurrent: boolean;
+    };
+    courses?: string[];
+    achievements: string[];
   }>;
-  work_experience: Array<{
-    job_title: string;
-    company_name: string;
-    location: string;
-    start_date: string;
-    end_date: string;
-    is_current: boolean;
-    bullet_points: string[];
+  workExperience: Array<{
+    jobTitle: string;
+    organization: string;
+    location: string | null;
+    dates: {
+      startDate: string; // YYYY-MM format
+      completionDate: string; // YYYY-MM format
+      isCurrent: boolean;
+    };
+    bulletPoints: string[];
+    achievements: string[];
   }>;
-  skills: Array<{
-    category: string;
-    skills: string[];
-  }>;
+  skills: Record<string, string[]>;
   projects: Array<{
     name: string;
     bulletPoints: string[];
@@ -56,4 +60,43 @@ export interface ProfileData {
     description: string;
     authors: string[];
   }>;
+  newEducation: {
+    organization: string;
+    accreditation: string;
+    location?: string; // Optional if needed
+    dates?: {
+      startDate?: string; // Optional if needed
+      completionDate?: string; // Optional if needed
+      isCurrent?: boolean; // Optional if needed
+    };
+    courses?: Array<string>; // Optional if needed
+    achievements?: Array<string>; // Optional if needed
+  };
+  newWorkExperience: {
+    jobTitle: string;
+    organization: string;
+    location?: string; // Optional if needed
+    dates?: {
+      startDate?: string; // Optional if needed
+      completionDate?: string; // Optional if needed
+      isCurrent?: boolean; // Optional if needed
+    };
+    bulletPoints?: Array<string>; // Optional if needed
+    achievements?: Array<string>; // Optional if needed
+  };
+  newSkill: {
+    category: string;
+    skills: string;
+  };
+  newProject: {
+    name: string;
+    bulletPoints: string;
+    dates: {
+      startDate: string;
+      completionDate: string;
+      isCurrent: boolean;
+    };
+    organization: string;
+    location: string;
+  };
 }

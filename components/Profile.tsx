@@ -39,7 +39,7 @@ const Profile = () => {
     }
   }, [user, getToken]);
 
-  const updateSection = async (clerk_id: string, email: string, sectionName: string, content: any) => {
+  const updateSection = async (clerk_id: string, email: string, sectionName: string, content: unknown) => {
     try {
       const token = await getToken();
       if (!token) {
@@ -93,40 +93,34 @@ const Profile = () => {
   };
 
   const validationSchema = Yup.object().shape({
-    personal_info: Yup.object().shape({
+    personalInfo: Yup.object().shape({
       name: Yup.string().required('Name is required'),
       email: Yup.string().email('Invalid email').required('Email is required'),
-      phone: Yup.string(),
+      phoneNumber: Yup.string(),
       location: Yup.string(),
-      linkedin_url: Yup.string().url('Invalid URL'),
-      github_url: Yup.string().url('Invalid URL')
+      linkedin: Yup.string().url('Invalid URL'),
+      githubUrl: Yup.string().url('Invalid URL')
     }),
     summary: Yup.string(),
     education: Yup.array().of(
       Yup.object().shape({
-        school_name: Yup.string().required('Institution name is required'),
+        schoolName: Yup.string().required('Institution name is required'),
         degree: Yup.string().required('Degree is required'),
         location: Yup.string(),
-        start_date: Yup.string().nullable(),
-        end_date: Yup.string().required('End date is required'),
-        is_current: Yup.boolean(),
+        startDate: Yup.string().nullable(),
+        completionDate: Yup.string().required('End date is required'),
+        isCurrent: Yup.boolean(),
       })
     ),
-    work_experience: Yup.array().of(
+    workExperience: Yup.array().of(
       Yup.object().shape({
-        company_name: Yup.string().required('Company name is required'),
-        job_title: Yup.string().required('Job title is required'),
+        companyName: Yup.string().required('Company name is required'),
+        jobTitle: Yup.string().required('Job title is required'),
         location: Yup.string(),
-        start_date: Yup.string().required('Start date is required'),
-        end_date: Yup.string().required('End date is required'),
-        is_current: Yup.boolean(),
-        bullet_points: Yup.array().of(Yup.string()),
-      })
-    ),
-    skills: Yup.array().of(
-      Yup.object().shape({
-        category: Yup.string().required('Category is required'),
-        skills: Yup.array().of(Yup.string()),
+        startDate: Yup.string().required('Start date is required'),
+        completionDate: Yup.string().required('End date is required'),
+        isCurrent: Yup.boolean(),
+        bulletPoints: Yup.array().of(Yup.string()),
       })
     ),
     certifications: Yup.array().of(
@@ -137,13 +131,13 @@ const Profile = () => {
     ),
     projects: Yup.array().of(
       Yup.object().shape({
-        project_name: Yup.string().required('Project name is required'),
+        projectName: Yup.string().required('Project name is required'),
         organization: Yup.string(),
         location: Yup.string(),
-        start_date: Yup.string(),
-        end_date: Yup.string(),
-        is_current: Yup.boolean(),
-        bullet_points: Yup.array().of(Yup.string())
+        startDate: Yup.string(),
+        completionDate: Yup.string(),
+        isCurrent: Yup.boolean(),
+        bulletPoints: Yup.array().of(Yup.string())
       })
     ),
   });
@@ -159,39 +153,61 @@ const Profile = () => {
     skills: false
   });
   const [initialValues, setInitialValues] = useState<ProfileData>({
-    personal_info: {
+    personalInfo: {
       name: '',
       email: '',
-      phone: '',
+      phoneNumber: '',
       location: '',
-      linkedin_url: '',
-      github_url: ''
+      linkedin: '',
+      githubUrl: ''
     },
     summary: '',
     education: [],
-    work_experience: [],
-    skills: [],
+    workExperience: [],
+    skills: {},
     projects: [],
     certifications: [],
     achievements: [],
     languages: [],
     publications: [],
     newEducation: {
-      school_name: '',
-      degree: '',
+      organization: '',
+      accreditation: '',
       location: '',
-      start_date: '',
-      end_date: '',
-      is_current: false
+      dates: {
+        startDate: '',
+        completionDate: '',
+        isCurrent: false,
+      },
+      courses: [],
+      achievements: []
     },
     newWorkExperience: {
-      company_name: '',
-      job_title: '',
+      jobTitle: '',
+      organization: '',
       location: '',
-      start_date: '',
-      end_date: '',
-      is_current: false,
-      bullet_points: []
+      dates: {
+        startDate: '',
+        completionDate: '',
+        isCurrent: false,
+      },
+      bulletPoints: [],
+      achievements: []
+    },
+    newSkill: {
+      category: '',
+      skills: ''
+    },
+    newProject: {
+      name: '',
+      bulletPoints: '',
+      dates: {
+        startDate: '',
+        completionDate: '',
+        isCurrent: false,
+      },
+      organization: '',
+      location: ''
     }
   });
 
@@ -244,11 +260,6 @@ const Profile = () => {
     }
   }, [getToken, user?.id]);
 
-  useEffect(() => {
-    // console.log('Profile - Current profile data:', JSON.stringify(initialValues, null, 2));
-  }, [initialValues]);
-
-
 
   const openDialog = (type: keyof DialogState) => {
     setDialogOpen({ ...dialogOpen, [type]: true });
@@ -258,7 +269,7 @@ const Profile = () => {
     setDialogOpen({ ...dialogOpen, [type]: false });
   };
 
-  const handleFieldBlur = async (fieldName: string, value: any, setFieldError: (field: string, message: string | undefined) => void) => {
+  const handleFieldBlur = async (fieldName: string, value: string, setFieldError: (field: string, message: string | undefined) => void) => {
     if (!user?.id) return;
 
     const parts = fieldName.split('.');
@@ -271,7 +282,21 @@ const Profile = () => {
 
     if (section === 'summary') {
       updatedSectionData = value;
-    } else if (Array.isArray(initialValues[section])) {
+    } else if (section === 'education' || section === 'workExperience' || section === 'projects') {
+      const eduData = currentSectionData[index];
+      if (['startDate', 'completionDate', 'isCurrent'].includes(field)) {
+        eduData.dates = {
+          ...eduData.dates,
+          [field]: value
+        };
+      } else {
+        eduData[field] = value;
+      }
+      updatedSectionData = currentSectionData.map((item, idx) =>
+        idx === index ? eduData : item
+      );
+    }
+    else if (Array.isArray(initialValues[section])) {
       const arrayData = [...currentSectionData];
       if (index !== null) {
         arrayData[index] = { ...arrayData[index], [field]: value };
@@ -285,7 +310,6 @@ const Profile = () => {
 
     try {
       await updateSection(user.id, user.primaryEmailAddress?.emailAddress, section, updatedSectionData);
-      toast.success(`${field || section} updated successfully`);
     } catch (error) {
       console.error('Error updating field:', error);
       toast.error('Failed to update field');
@@ -293,17 +317,17 @@ const Profile = () => {
     }
   };
 
-  const handleDelete = async (sectionName: string, newData: any[], sectionType: string) => {
+  const handleDelete = async (sectionName: string, newData: unknown[], sectionType: string) => {
     console.log('handleDelete', sectionName, newData, sectionType);
     const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
+      email: user?.primaryEmailAddress?.emailAddress,
+      clerk_id: user?.id,
       resume: {
-        personal_info: { ...initialValues.personal_info },
+        personalInfo: { ...initialValues.personalInfo },
         summary: initialValues.summary,
         education: sectionType === 'education' ? newData : [...initialValues.education],
-        work_experience: sectionType === 'work_experience' ? newData : [...initialValues.work_experience],
-        skills: sectionType === 'skills' ? newData : [...initialValues.skills],
+        workExperience: sectionType === 'workExperience' ? newData : [...initialValues.workExperience],
+        skills: sectionType === 'skills' ? newData : { ...initialValues.skills },
         projects: sectionType === 'projects' ? newData : [...initialValues.projects],
         certifications: sectionType === 'certifications' ? newData : [...initialValues.certifications],
         achievements: sectionType === 'achievements' ? newData : [...initialValues.achievements],
@@ -322,38 +346,39 @@ const Profile = () => {
     }
   };
 
-  const handleChange = async (section: string, newData: any[]) => {
+  const handleChange = async (section: string, newData: unknown) => {
     console.log('handleChange', section, newData);
     const payload = {
-      email: user.primaryEmailAddress?.emailAddress,
-      clerk_id: user.id,
+      email: user?.primaryEmailAddress?.emailAddress,
+      clerk_id: user?.id,
       resume: {
-        personal_info: { ...initialValues.personal_info },
+        personalInfo: { ...initialValues.personalInfo },
         summary: initialValues.summary,
-        education: [...initialValues.education],
-        work_experience: [...initialValues.work_experience],
-        skills: [...initialValues.skills],
-        projects: [...initialValues.projects],
-        certifications: [...initialValues.certifications],
-        achievements: [...initialValues.achievements],
-        languages: [...initialValues.languages],
-        publications: [...initialValues.publications],
+        education: section === 'education' ? newData : [...initialValues.education],
+        workExperience: section === 'workExperience' ? newData : [...initialValues.workExperience],
+        skills: section === 'skills' ? newData : { ...initialValues.skills },
+        projects: section === 'projects' ? newData : [...initialValues.projects],
+        certifications: section === 'certifications' ? newData : [...initialValues.certifications],
+        achievements: section === 'achievements' ? newData : [...initialValues.achievements],
+        languages: section === 'languages' ? newData : [...initialValues.languages],
+        publications: section === 'publications' ? newData : [...initialValues.publications],
       },
     };
-
-    payload.resume[section] = newData;
 
     try {
       const response = await axios.post('http://localhost:8000/api/v1/profiles', payload);
       console.log('API Response:', response.data);
-      toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} updated successfully`);
       setInitialValues(response.data.resume);
+      if (section !== 'skills') {
+        toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} Added successfully`);
+      }
     } catch (error) {
       console.error('API Error:', error);
+      toast.error('Failed to update section');
     }
   };
 
-  const handleResumeData = (data: any) => {
+  const handleResumeData = (data: ProfileData) => {
     setInitialValues(data);
     toast.success('Resume data loaded successfully');
   };
@@ -384,12 +409,716 @@ const Profile = () => {
   const deleteButtonClass = "flex-shrink-0 text-gray-400 hover:text-red-600 transition-colors duration-150 p-1 rounded hover:bg-red-50";
   const deleteIconClass = "w-4 h-4";
 
+  const renderSkills = (values: ProfileData) => (
+    <div className="bg-white rounded-lg shadow-sm p-6 transition-all duration-200 hover:shadow-md">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Skills</h2>
+        <button
+          type="button"
+          onClick={() => setDialogOpen({ ...dialogOpen, skills: true })}
+          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors duration-150"
+        >
+          <FaPlus className="mr-2" /> Add Skills
+        </button>
+      </div>
+      {Object.entries(values.skills || {}).map(([category, skills]) => (
+        <div
+          key={category}
+          className="border border-gray-100 rounded-lg p-4 mb-4 last:mb-0 hover:border-gray-200 transition-all duration-200"
+        >
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-lg font-medium text-gray-800">{category}</h3>
+            <button
+              type="button"
+              onClick={() => {
+                const newSkills = { ...values.skills };
+                delete newSkills[category];
+                handleChange('skills', newSkills);
+              }}
+              className={deleteButtonClass}
+            >
+              <FaTrash className={deleteIconClass} />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Array.isArray(skills) && skills.map((skill: string, skillIndex: number) => (
+              <div
+                key={`${category}-${skillIndex}`}
+                className="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-full text-sm flex items-center group hover:bg-blue-100 transition-all duration-150"
+              >
+                <span>{skill}</span>
+                <button
+                  type="button"
+                  className="ml-2 text-blue-400 group-hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  onClick={() => {
+                    const newSkills = { ...values.skills };
+                    newSkills[category] = skills.filter((_: unknown, index: number) => index !== skillIndex);
+                    handleChange('skills', newSkills);
+                  }}
+                >
+                  <FaTimes className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="bg-gray-50 text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded-full text-sm flex items-center transition-colors duration-150"
+              onClick={() => {
+                const skill = window.prompt('Enter new skill');
+                if (skill) {
+                  const newSkills = { ...values.skills };
+                  newSkills[category] = [...(skills || []), skill];
+                  handleChange('skills', newSkills);
+                }
+              }}
+            >
+              <FaPlus className="w-3 h-3 mr-1" /> Add Skill
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const SkillsDialog = ({ values }: { values: ProfileData }) => (
+    <Dialog
+      isOpen={dialogOpen.skills}
+      onClose={() => closeDialog('skills')}
+      title="Add Skills Category"
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Category Name</label>
+          <Field
+            type="text"
+            name="newSkill.category"
+            placeholder="e.g., Frontend Development"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Skills</label>
+          <Field
+            type="text"
+            name="newSkill.skills"
+            placeholder="Enter comma-separated skills"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+          <p className="mt-1 text-sm text-gray-500">Separate multiple skills with commas</p>
+        </div>
+      </div>
+      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+        <button
+          type="button"
+          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2"
+          onClick={() => {
+            console.log('values', values);
+            const category = values.newSkill?.category;
+            const skillsInput = values.newSkill?.skills;
+            console.log('category', category);
+            console.log('skillsInput', skillsInput);
+            if (category && skillsInput) {
+              const skillsList = skillsInput.split(',').map((skill: string) => skill.trim()).filter(Boolean);
+              const newSkills = { ...values.skills };
+              newSkills[category] = skillsList;
+              handleChange('skills', newSkills);
+              closeDialog('skills');
+            }
+          }}
+        >
+          Add
+        </button>
+        <button
+          type="button"
+          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1"
+          onClick={() => closeDialog('skills')}
+        >
+          Cancel
+        </button>
+      </div>
+    </Dialog>
+  );
+
+  const renderPersonalInfo = (values: ProfileData, setFieldError: (field: string, message: string | undefined) => void) => (
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Personal Information</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Name</label>
+          <Field
+            type="text"
+            name="personalInfo.name"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter your full name"
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              handleFieldBlur('personalInfo.name', e.target.value, setFieldError);
+            }}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <Field
+            type="email"
+            name="personalInfo.email"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter your email"
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              handleFieldBlur('personalInfo.email', e.target.value, setFieldError);
+            }}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Phone</label>
+          <Field
+            type="text"
+            name="personalInfo.phoneNumber"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter your phone number"
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              handleFieldBlur('personalInfo.phoneNumber', e.target.value, setFieldError);
+            }}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Location</label>
+          <Field
+            type="text"
+            name="personalInfo.location"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter your location"
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              handleFieldBlur('personalInfo.location', e.target.value, setFieldError);
+            }}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">LinkedIn URL</label>
+          <Field
+            type="url"
+            name="personalInfo.linkedin"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter your LinkedIn profile URL"
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              handleFieldBlur('personalInfo.linkedin', e.target.value, setFieldError);
+            }}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">GitHub URL</label>
+          <Field
+            type="url"
+            name="personalInfo.githubUrl"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter your GitHub profile URL"
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              handleFieldBlur('personalInfo.githubUrl', e.target.value, setFieldError);
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderEducation = (values: ProfileData, setFieldError: (field: string, message: string | undefined) => void, setFieldValue: (field: string, value: unknown) => void) => (
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Education</h2>
+        <button
+          type="button"
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          onClick={() => {
+            openDialog('education')
+          }}
+        >
+          <FaPlus className="mr-2" /> Add Education
+        </button>
+      </div>
+      {values?.education?.map((edu, index) => (
+        <div key={index} className="border-b border-gray-200 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="text-lg font-medium">{edu?.organization}</h3>
+            <button
+              type="button"
+              onClick={() => {
+                const newEducation = [...values.education];
+                newEducation.splice(index, 1);
+                setFieldValue('education', newEducation);
+                handleDelete('education', newEducation, 'education');
+              }}
+              className={deleteButtonClass}
+            >
+              <FaTrash className={deleteIconClass} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">School Name</label>
+              <Field
+                type="text"
+                name={`education.${index}.organization`}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  handleFieldBlur(`education.${index}.organization`, e.target.value, setFieldError);
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Accreditation</label>
+              <Field
+                type="text"
+                name={`education.${index}.accreditation`}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  handleFieldBlur(`education.${index}.accreditation`, e.target.value, setFieldError);
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Location</label>
+              <Field
+                type="text"
+                name={`education.${index}.location`}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  handleFieldBlur(`education.${index}.location`, e.target.value, setFieldError);
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Start Date</label>
+              <Field
+                type="date"
+                name={`education.${index}.dates.startDate`}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  handleFieldBlur(`education.${index}.dates.startDate`, e.target.value, setFieldError);
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">End Date</label>
+              <Field
+                type="date"
+                name={`education.${index}.dates.completionDate`}
+                disabled={values.education[index]?.dates?.isCurrent}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  handleFieldBlur(`education.${index}.dates.completionDate`, e.target.value, setFieldError);
+                }}
+              />
+            </div>
+            <div className="flex items-center mt-6">
+              <Field
+                type="checkbox"
+                name={`education.${index}.dates.isCurrent`}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  handleFieldBlur(`education.${index}.dates.isCurrent`, e.target.checked, setFieldError);
+                }}
+              />
+              <label className="ml-2 block text-sm text-gray-900">Currently Studying</label>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderEducationDialog = (values: ProfileData, setFieldError: (field: string, message: string | undefined) => void, setFieldValue: (field: string, value: unknown) => void) => (
+    <Dialog
+      isOpen={dialogOpen.education}
+      onClose={() => closeDialog('education')}
+      title="Add Education"
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">School Name</label>
+          <Field
+            type="text"
+            name="newEducation.organization"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter school name"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Degree</label>
+          <Field
+            type="text"
+            name="newEducation.accreditation"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter accreditation"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Location</label>
+          <Field
+            type="text"
+            name="newEducation.location"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter location"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Start Date</label>
+          <Field
+            type="date"
+            name="newEducation.dates.startDate"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">End Date</label>
+          <Field
+            type="date"
+            name="newEducation.dates.completionDate"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex items-center">
+          <Field
+            type="checkbox"
+            name="newEducation.dates.isCurrent"
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label className="ml-2 block text-sm text-gray-900">Currently Studying</label>
+        </div>
+      </div>
+      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+        <button
+          type="button"
+          onClick={() => {
+            const newEducation = { ...values.newEducation };
+            handleChange('education', [...values.education, newEducation]);
+            setFieldValue('newEducation', {
+              organization: '',
+              accreditation: '',
+              location: '',
+              dates: {
+                startDate: '',
+                completionDate: '',
+                isCurrent: false
+              }
+            });
+            closeDialog('education');
+          }}
+          className="flex-1 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Add
+        </button>
+        <button
+          type="button"
+          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          onClick={() => {
+            closeDialog('education');
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </Dialog>
+  );
+
+  const renderWorkExperience = (values: ProfileData, setFieldError: (field: string, message: string | undefined) => void, setFieldValue: (field: string, value: unknown) => void) => (
+    <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-900">Work Experience</h2>
+        <button
+          type="button"
+          onClick={() => setDialogOpen({ ...dialogOpen, workExperience: true })}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <FaPlus className="mr-2 w-4 h-4" /> Add Work Experience
+        </button>
+      </div>
+
+      {values.workExperience.map((experience, index) => (
+        <div key={index} className="border border-gray-200 rounded-lg p-6 space-y-4 hover:border-gray-300 transition-colors duration-200">
+          <div className="flex justify-between items-start">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {experience.jobTitle} at {experience.organization}
+            </h3>
+            <button
+              type="button"
+              onClick={() => {
+                const newWorkExperience = [...values.workExperience];
+                newWorkExperience.splice(index, 1);
+                setFieldValue('workExperience', newWorkExperience);
+                handleDelete('workExperience', newWorkExperience, 'workExperience');
+              }}
+              className={deleteButtonClass}
+            >
+              <FaTrash className={deleteIconClass} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <Field
+                  type="text"
+                  name={`workExperience.${index}.organization`}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  placeholder="Enter company name"
+                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                    handleFieldBlur(`workExperience.${index}.organization`, e.target.value, setFieldError);
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                <Field
+                  type="text"
+                  name={`workExperience.${index}.jobTitle`}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  placeholder="Enter job title"
+                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                    handleFieldBlur(`workExperience.${index}.jobTitle`, e.target.value, setFieldError);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+              <Field
+                type="text"
+                name={`workExperience.${index}.location`}
+                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                placeholder="Enter location"
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  handleFieldBlur(`workExperience.${index}.location`, e.target.value, setFieldError);
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <Field
+                  type="date"
+                  name={`workExperience.${index}.dates.startDate`}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                    handleFieldBlur(`workExperience.${index}.dates.startDate`, e.target.value, setFieldError);
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <Field
+                  type="date"
+                  name={`workExperience.${index}.dates.completionDate`}
+                  disabled={values.workExperience[index]?.dates?.isCurrent}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                    handleFieldBlur(`workExperience.${index}.dates.completionDate`, e.target.value, setFieldError);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center">
+              <Field
+                type="checkbox"
+                name={`workExperience.${index}.dates.isCurrent`}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  handleFieldBlur(`workExperience.${index}.dates.isCurrent`, e.target.checked, setFieldError);
+                }}
+              />
+              <label className="ml-2 text-sm text-gray-900">Currently Working</label>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
+              <div className="space-y-3">
+                {values.workExperience[index].bulletPoints?.map((point, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <Field
+                      as="textarea"
+                      rows={2}
+                      name={`workExperience.${index}.bulletPoints.${idx}`}
+                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-y"
+                      placeholder="Add accomplishment or responsibility..."
+                      onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
+                        handleFieldBlur(`workExperience.${index}.bulletPoints.${idx}`, e.target.value, setFieldError);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newBulletPoints = [...values.workExperience[index].bulletPoints];
+                        newBulletPoints.splice(idx, 1);
+                        setFieldValue(`workExperience.${index}.bulletPoints`, newBulletPoints);
+                      }}
+                      className={deleteButtonClass}
+                    >
+                      <FaTrash className={deleteIconClass} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentBulletPoints = values.workExperience[index].bulletPoints || [];
+                    setFieldValue(`workExperience.${index}.bulletPoints`, [...currentBulletPoints, '']);
+                  }}
+                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <FaPlus className="w-3 h-3 mr-1" /> Add Bullet Point
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderWorkExperienceDialog = (values: ProfileData, setFieldError: (field: string, message: string | undefined) => void, setFieldValue: (field: string, value: unknown) => void) => (
+    <Dialog
+      isOpen={dialogOpen.workExperience}
+      onClose={() => closeDialog('workExperience')}
+      title="Add Work Experience"
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Company Name</label>
+          <Field
+            type="text"
+            name="newWorkExperience.organization"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter company name"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Job Title</label>
+          <Field
+            type="text"
+            name="newWorkExperience.jobTitle"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter job title"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Location</label>
+          <Field
+            type="text"
+            name="newWorkExperience.location"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="Enter location"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Start Date</label>
+            <Field
+              type="date"
+              name="newWorkExperience.dates.startDate"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">End Date</label>
+            <Field
+              type="date"
+              name="newWorkExperience.dates.completionDate"
+              disabled={values.newWorkExperience?.dates?.isCurrent}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
+          </div>
+        </div>
+        <div className="flex items-center">
+          <Field
+            type="checkbox"
+            name="newWorkExperience.dates.isCurrent"
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label className="ml-2 block text-sm text-gray-900">Currently Working Here</label>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
+          <div className="space-y-3">
+            {values.newWorkExperience?.bulletPoints?.map((point, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <Field
+                  as="textarea"
+                  rows={2}
+                  name={`newWorkExperience.bulletPoints.${idx}`}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-y"
+                  placeholder="Add accomplishment or responsibility..."
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newPoints = [...(values.newWorkExperience?.bulletPoints || [])];
+                    newPoints.splice(idx, 1);
+                    setFieldValue('newWorkExperience.bulletPoints', newPoints);
+                  }}
+                  className={deleteButtonClass}
+                >
+                  <FaTrash className={deleteIconClass} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                const currentPoints = values.newWorkExperience?.bulletPoints || [];
+                setFieldValue('newWorkExperience.bulletPoints', [...currentPoints, '']);
+              }}
+              className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <FaPlus className="w-3 h-3 mr-1" /> Add Bullet Point
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+        <button
+          type="button"
+          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2"
+          onClick={() => {
+            const newWorkExperience = { ...values.newWorkExperience };
+            handleChange('workExperience', [...values.workExperience, newWorkExperience]);
+            setFieldValue('newWorkExperience', {
+              organization: '',
+              jobTitle: '',
+              location: '',
+              dates: {
+                startDate: '',
+                completionDate: '',
+                isCurrent: false
+              },
+              bulletPoints: [],
+              achievements: []
+            });
+            closeDialog('workExperience');
+          }}
+        >
+          Add
+        </button>
+        <button
+          type="button"
+          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1"
+          onClick={() => closeDialog('workExperience')}
+        >
+          Cancel
+        </button>
+      </div>
+    </Dialog>
+  );
+
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center sm:py-2">
       <div className="relative sm:max-w-xl md:max-w-4xl sm:mx-auto">
 
         {
-          !initialValues?.personal_info?.name ?
+          !initialValues?.personalInfo?.name ?
             <ResumeUpload onUploadSuccess={handleResumeData} />
             :
             <Formik
@@ -403,83 +1132,7 @@ const Profile = () => {
                   <ResumeUpload isButton onUploadSuccess={handleResumeData} />
                   <div className="space-y-8">
                     {/* Personal Information */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-6">Personal Information</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Name</label>
-                          <Field
-                            type="text"
-                            name="personal_info.name"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter your full name"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('personal_info.name', e.target.value, setFieldError);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Email</label>
-                          <Field
-                            type="email"
-                            name="personal_info.email"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter your email"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('personal_info.email', e.target.value, setFieldError);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Phone</label>
-                          <Field
-                            type="text"
-                            name="personal_info.phone"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter your phone number"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('personal_info.phone', e.target.value, setFieldError);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Location</label>
-                          <Field
-                            type="text"
-                            name="personal_info.location"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter your location"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('personal_info.location', e.target.value, setFieldError);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">LinkedIn URL</label>
-                          <Field
-                            type="url"
-                            name="personal_info.linkedin_url"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter your LinkedIn profile URL"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('personal_info.linkedin_url', e.target.value, setFieldError);
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">GitHub URL</label>
-                          <Field
-                            type="url"
-                            name="personal_info.github_url"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter your GitHub profile URL"
-                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                              handleFieldBlur('personal_info.github_url', e.target.value, setFieldError);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    {renderPersonalInfo(values, setFieldError)}
 
                     {/* Summary */}
                     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -496,623 +1149,21 @@ const Profile = () => {
                     </div>
 
                     {/* Education */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                      <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Education</h2>
-                        <button
-                          type="button"
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          onClick={() => {
-                            openDialog('education')
-                          }}
-                        >
-                          <FaPlus className="mr-2" /> Add Education
-                        </button>
-                      </div>
-                      {values?.education?.map((edu, index) => (
-                        <div key={index} className="border-b border-gray-200 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
-                          <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-medium">{edu?.school_name}</h3>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newEducation = [...values.education];
-                                newEducation.splice(index, 1);
-                                setFieldValue('education', newEducation);
-                                handleDelete('education', newEducation, 'education');
-                              }}
-                              className={deleteButtonClass}
-                            >
-                              <FaTrash className={deleteIconClass} />
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">School Name</label>
-                              <Field
-                                type="text"
-                                name={`education.${index}.school_name`}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`education.${index}.school_name`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">Degree</label>
-                              <Field
-                                type="text"
-                                name={`education.${index}.degree`}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`education.${index}.degree`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">Location</label>
-                              <Field
-                                type="text"
-                                name={`education.${index}.location`}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`education.${index}.location`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                              <Field
-                                type="date"
-                                name={`education.${index}.start_date`}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`education.${index}.start_date`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700">End Date</label>
-                              <Field
-                                type="date"
-                                name={`education.${index}.end_date`}
-                                disabled={values.education[index]?.is_current}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`education.${index}.end_date`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-                            <div className="flex items-center mt-6">
-                              <Field
-                                type="checkbox"
-                                name={`education.${index}.is_current`}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`education.${index}.is_current`, e.target.checked, setFieldError);
-                                }}
-                              />
-                              <label className="ml-2 block text-sm text-gray-900">Currently Studying</label>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
+                    {renderEducation(values, setFieldError, setFieldValue)}
                     {/* Education Dialog */}
-                    <Dialog
-                      isOpen={dialogOpen.education}
-                      onClose={() => closeDialog('education')}
-                      title="Add Education"
-                    >
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">School Name</label>
-                          <Field
-                            type="text"
-                            name="newEducation.school_name"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter school name"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Degree</label>
-                          <Field
-                            type="text"
-                            name="newEducation.degree"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter degree"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Location</label>
-                          <Field
-                            type="text"
-                            name="newEducation.location"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter location"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                          <Field
-                            type="date"
-                            name="newEducation.start_date"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">End Date</label>
-                          <Field
-                            type="date"
-                            name="newEducation.end_date"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div className="flex items-center">
-                          <Field
-                            type="checkbox"
-                            name="newEducation.is_current"
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                          <label className="ml-2 block text-sm text-gray-900">Currently Studying</label>
-                        </div>
-                      </div>
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newEducation = { ...values.newEducation };
-                            handleChange('education', [...values.education, newEducation]);
-                            setFieldValue('newEducation', {
-                              school_name: '',
-                              degree: '',
-                              location: '',
-                              start_date: '',
-                              end_date: '',
-                              is_current: false
-                            });
-                            closeDialog('education');
-                          }}
-                          className="flex-1 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          Add
-                        </button>
-                        <button
-                          type="button"
-                          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          onClick={() => {
-                            closeDialog('education');
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </Dialog>
+                    {renderEducationDialog(values, setFieldError, setFieldValue)}
 
                     {/* Work Experience */}
-                    <div className="bg-white rounded-lg shadow-sm p-6 space-y-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-bold text-gray-900">Work Experience</h2>
-                        <button
-                          type="button"
-                          onClick={() => setDialogOpen({ ...dialogOpen, workExperience: true })}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          <FaPlus className="mr-2 w-4 h-4" /> Add Work Experience
-                        </button>
-                      </div>
-
-                      {values.work_experience.map((experience, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-6 space-y-4 hover:border-gray-300 transition-colors duration-200">
-                          <div className="flex justify-between items-start">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {experience.job_title} at {experience.company_name}
-                            </h3>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newWorkExperience = [...values.work_experience];
-                                newWorkExperience.splice(index, 1);
-                                setFieldValue('work_experience', newWorkExperience);
-                                handleDelete('work_experience', newWorkExperience, 'work_experience');
-                              }}
-                              className={deleteButtonClass}
-                            >
-                              <FaTrash className={deleteIconClass} />
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                                <Field
-                                  type="text"
-                                  name={`work_experience.${index}.company_name`}
-                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                                  placeholder="Enter company name"
-                                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`work_experience.${index}.company_name`, e.target.value, setFieldError);
-                                  }}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
-                                <Field
-                                  type="text"
-                                  name={`work_experience.${index}.job_title`}
-                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                                  placeholder="Enter job title"
-                                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`work_experience.${index}.job_title`, e.target.value, setFieldError);
-                                  }}
-                                />
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                              <Field
-                                type="text"
-                                name={`work_experience.${index}.location`}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                                placeholder="Enter location"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`work_experience.${index}.location`, e.target.value, setFieldError);
-                                }}
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                                <Field
-                                  type="date"
-                                  name={`work_experience.${index}.start_date`}
-                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`work_experience.${index}.start_date`, e.target.value, setFieldError);
-                                  }}
-                                />
-                              </div>
-
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                                <Field
-                                  type="date"
-                                  name={`work_experience.${index}.end_date`}
-                                  disabled={experience.is_current}
-                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                  onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`work_experience.${index}.end_date`, e.target.value, setFieldError);
-                                  }}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center">
-                              <Field
-                                type="checkbox"
-                                name={`work_experience.${index}.is_current`}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`work_experience.${index}.is_current`, e.target.checked, setFieldError);
-                                }}
-                              />
-                              <label className="ml-2 text-sm text-gray-900">Currently Working</label>
-                            </div>
-
-                            <div className="space-y-4">
-                              <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
-                              <div className="space-y-3">
-                                {values.work_experience[index].bullet_points?.map((point, idx) => (
-                                  <div key={idx} className="flex items-start gap-2">
-                                    <Field
-                                      as="textarea"
-                                      rows={2}
-                                      name={`work_experience.${index}.bullet_points.${idx}`}
-                                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-y"
-                                      placeholder="Add accomplishment or responsibility..."
-                                      onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                                        handleFieldBlur(`work_experience.${index}.bullet_points.${idx}`, e.target.value, setFieldError);
-                                      }}
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const newBulletPoints = [...values.work_experience[index].bullet_points];
-                                        newBulletPoints.splice(idx, 1);
-                                        setFieldValue(`work_experience.${index}.bullet_points`, newBulletPoints);
-                                      }}
-                                      className={deleteButtonClass}
-                                    >
-                                      <FaTrash className={deleteIconClass} />
-                                    </button>
-                                  </div>
-                                ))}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const currentBulletPoints = values.work_experience[index].bullet_points || [];
-                                    setFieldValue(`work_experience.${index}.bullet_points`, [...currentBulletPoints, '']);
-                                  }}
-                                  className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                  <FaPlus className="w-3 h-3 mr-1" /> Add Bullet Point
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {renderWorkExperience(values, setFieldError, setFieldValue)}
 
                     {/* Work Experience Dialog */}
-                    <Dialog
-                      isOpen={dialogOpen.workExperience}
-                      onClose={() => closeDialog('workExperience')}
-                      title="Add Work Experience"
-                    >
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Company Name</label>
-                          <Field
-                            type="text"
-                            name="newWorkExperience.company_name"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter company name"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Job Title</label>
-                          <Field
-                            type="text"
-                            name="newWorkExperience.job_title"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter job title"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Location</label>
-                          <Field
-                            type="text"
-                            name="newWorkExperience.location"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            placeholder="Enter location"
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                            <Field
-                              type="date"
-                              name="newWorkExperience.start_date"
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700">End Date</label>
-                            <Field
-                              type="date"
-                              name="newWorkExperience.end_date"
-                              disabled={values.newWorkExperience?.is_current}
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center">
-                          <Field
-                            type="checkbox"
-                            name="newWorkExperience.is_current"
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <label className="ml-2 block text-sm text-gray-900">Currently Working Here</label>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
-                          <div className="space-y-3">
-                            {values.newWorkExperience?.bullet_points?.map((point, idx) => (
-                              <div key={idx} className="flex items-start gap-2">
-                                <Field
-                                  as="textarea"
-                                  rows={2}
-                                  name={`newWorkExperience.bullet_points.${idx}`}
-                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-y"
-                                  placeholder="Add accomplishment or responsibility..."
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const newPoints = [...(values.newWorkExperience?.bullet_points || [])];
-                                    newPoints.splice(idx, 1);
-                                    setFieldValue('newWorkExperience.bullet_points', newPoints);
-                                  }}
-                                  className={deleteButtonClass}
-                                >
-                                  <FaTrash className={deleteIconClass} />
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const currentPoints = values.newWorkExperience?.bullet_points || [];
-                                setFieldValue('newWorkExperience.bullet_points', [...currentPoints, '']);
-                              }}
-                              className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                              <FaPlus className="w-3 h-3 mr-1" /> Add Bullet Point
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="button"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2"
-                          onClick={() => {
-                            const newWorkExperience = { ...values.newWorkExperience };
-                            handleChange('work_experience', [...values.work_experience, newWorkExperience]);
-                            setFieldValue('newWorkExperience', {
-                              company_name: '',
-                              job_title: '',
-                              location: '',
-                              start_date: '',
-                              end_date: '',
-                              is_current: false
-                            });
-                            closeDialog('workExperience');
-                          }}
-                        >
-                          Add
-                        </button>
-                        <button
-                          type="button"
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1"
-                          onClick={() => closeDialog('workExperience')}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </Dialog>
+                    {renderWorkExperienceDialog(values, setFieldError, setFieldValue)}
 
                     {/* Skills */}
-                    <div className="bg-white rounded-lg shadow-sm p-6 transition-all duration-200 hover:shadow-md">
-                      <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Skills</h2>
-                        <button
-                          type="button"
-                          onClick={() => setDialogOpen({ ...dialogOpen, skills: true })}
-                          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors duration-150"
-                        >
-                          <FaPlus className="mr-2" /> Add Skills
-                        </button>
-                      </div>
-                      {(values.skills || []).map((skillCategory, categoryIndex) => (
-                        <div
-                          key={categoryIndex}
-                          className="border border-gray-100 rounded-lg p-4 mb-4 last:mb-0 hover:border-gray-200 transition-all duration-200"
-                        >
-                          <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-medium text-gray-800">{skillCategory.category}</h3>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newSkills = [...values.skills];
-                                newSkills.splice(categoryIndex, 1);
-                                setFieldValue('skills', newSkills);
-                                handleDelete('skills', newSkills, 'skills');
-                              }}
-                              className={deleteButtonClass}
-                            >
-                              <FaTrash className={deleteIconClass} />
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {(skillCategory.skills || []).map((skill, skillIndex) => (
-                              <div
-                                key={skillIndex}
-                                className="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-full text-sm flex items-center group hover:bg-blue-100 transition-all duration-150"
-                              >
-                                <span>{skill}</span>
-                                <button
-                                  type="button"
-                                  className="ml-2 text-blue-400 group-hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                                  onClick={() => {
-                                    const newSkills = [...values.skills];
-                                    newSkills[categoryIndex].skills = skillCategory.skills.filter(
-                                      (_, index) => index !== skillIndex
-                                    );
-                                    setFieldValue('skills', newSkills);
-                                    handleDelete('skills', newSkills, 'skills');
-                                  }}
-                                >
-                                  <FaTimes className="w-3 h-3" />
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              type="button"
-                              className="bg-gray-50 text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded-full text-sm flex items-center transition-colors duration-150"
-                              onClick={() => {
-                                const skill = window.prompt('Enter new skill');
-                                if (skill) {
-                                  const newSkills = [...values.skills];
-                                  newSkills[categoryIndex].skills = [...skillCategory.skills, skill];
-                                  setFieldValue('skills', newSkills);
-                                  handleChange('skills', newSkills);
-                                }
-                              }}
-                            >
-                              <FaPlus className="w-3 h-3 mr-1" /> Add Skill
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    {renderSkills(values)}
 
                     {/* Skills Dialog */}
-                    <Dialog
-                      isOpen={dialogOpen.skills}
-                      onClose={() => closeDialog('skills')}
-                      title="Add Skills"
-                    >
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Category</label>
-                          <Field
-                            type="text"
-                            name="newSkill.category"
-                            placeholder="e.g., Programming Languages, Frameworks, Tools"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">Skills</label>
-                          <Field
-                            type="text"
-                            name="newSkill.skills"
-                            placeholder="Enter comma-separated skills"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                          />
-                          <p className="mt-1 text-sm text-gray-500">Separate multiple skills with commas (e.g., React, Node.js, TypeScript)</p>
-                        </div>
-                      </div>
-                      <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button
-                          type="button"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2"
-                          onClick={() => {
-                            const category = values.newSkill?.category?.trim();
-                            const skillsInput = values.newSkill?.skills?.trim();
-
-                            if (category && skillsInput) {
-                              const skillsList = skillsInput.split(',').map(skill => skill.trim()).filter(Boolean);
-                              const newSkillCategory = {
-                                category: category,
-                                skills: skillsList
-                              };
-
-                              setFieldValue('skills', [...(values.skills || []), newSkillCategory]);
-                              setFieldValue('newSkill', { category: '', skills: '' });
-                              handleChange('skills', [...(values.skills || []), newSkillCategory]);
-                              closeDialog('skills');
-                            }
-                          }}
-                        >
-                          Add
-                        </button>
-                        <button
-                          type="button"
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1"
-                          onClick={() => closeDialog('skills')}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </Dialog>
+                    <SkillsDialog values={values} />
 
                     {/* Projects */}
                     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -1129,7 +1180,7 @@ const Profile = () => {
                       {(values.projects || []).map((proj, index) => (
                         <div key={index} className="border-b border-gray-200 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
                           <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-medium">{proj.project_name}</h3>
+                            <h3 className="text-lg font-medium">{proj.projectName}</h3>
                             <button
                               type="button"
                               onClick={() => {
@@ -1149,10 +1200,10 @@ const Profile = () => {
                                 <label className="block text-sm font-medium text-gray-700">Project Name</label>
                                 <Field
                                   type="text"
-                                  name={`projects.${index}.project_name`}
+                                  name={`projects.${index}.projectName`}
                                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                   onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                    handleFieldBlur(`projects.${index}.project_name`, e.target.value, setFieldError);
+                                    handleFieldBlur(`projects.${index}.projectName`, e.target.value, setFieldError);
                                   }}
                                 />
                               </div>
@@ -1183,10 +1234,10 @@ const Profile = () => {
                                   <label className="block text-sm font-medium text-gray-700">Start Date</label>
                                   <Field
                                     type="month"
-                                    name={`projects.${index}.start_date`}
+                                    name={`projects.${index}.dates.startDate`}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                      handleFieldBlur(`projects.${index}.start_date`, e.target.value, setFieldError);
+                                      handleFieldBlur(`projects.${index}.dates.startDate`, e.target.value, setFieldError);
                                     }}
                                   />
                                 </div>
@@ -1194,11 +1245,11 @@ const Profile = () => {
                                   <label className="block text-sm font-medium text-gray-700">Completion Date</label>
                                   <Field
                                     type="month"
-                                    name={`projects.${index}.end_date`}
-                                    disabled={proj.is_current}
+                                    name={`projects.${index}.dates.completionDate`}
+                                    disabled={proj.dates.isCurrent}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                      handleFieldBlur(`projects.${index}.end_date`, e.target.value, setFieldError);
+                                      handleFieldBlur(`projects.${index}.dates.completionDate`, e.target.value, setFieldError);
                                     }}
                                   />
                                 </div>
@@ -1207,10 +1258,10 @@ const Profile = () => {
                             <div className="flex items-center">
                               <Field
                                 type="checkbox"
-                                name={`projects.${index}.is_current`}
+                                name={`projects.${index}.dates.isCurrent`}
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                  handleFieldBlur(`projects.${index}.is_current`, e.target.checked, setFieldError);
+                                  handleFieldBlur(`projects.${index}.dates.isCurrent`, e.target.checked, setFieldError);
                                 }}
                               />
                               <label className="ml-2 text-sm text-gray-900">This is my current project</label>
@@ -1218,22 +1269,22 @@ const Profile = () => {
                             <div className="space-y-4">
                               <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
                               <div className="space-y-3">
-                                {proj.bullet_points?.map((point, idx) => (
+                                {proj.bulletPoints?.map((point, idx) => (
                                   <div key={idx} className="flex items-center">
                                     <Field
                                       type="text"
                                       rows={2}
-                                      name={`projects.${index}.bullet_points.${idx}`}
+                                      name={`projects.${index}.bulletPoints.${idx}`}
                                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm resize-y"
                                       onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                                        handleFieldBlur(`projects.${index}.bullet_points.${idx}`, e.target.value, setFieldError);
+                                        handleFieldBlur(`projects.${index}.bulletPoints.${idx}`, e.target.value, setFieldError);
                                       }}
                                     />
                                     <button
                                       type="button"
                                       onClick={() => {
                                         const newProjects = [...values.projects];
-                                        newProjects[index].bullet_points.splice(idx, 1);
+                                        newProjects[index].bulletPoints.splice(idx, 1);
                                         setFieldValue('projects', newProjects);
                                         handleProjectChange(newProjects);
                                       }}
@@ -1246,8 +1297,8 @@ const Profile = () => {
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const currentPoints = values.projects[index].bullet_points || [];
-                                    setFieldValue(`projects.${index}.bullet_points`, [...currentPoints, '']);
+                                    const currentPoints = values.projects[index].bulletPoints || [];
+                                    setFieldValue(`projects.${index}.bulletPoints`, [...currentPoints, '']);
                                   }}
                                   className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 >
@@ -1271,7 +1322,7 @@ const Profile = () => {
                           <label className="block text-sm font-medium text-gray-700">Project Name</label>
                           <Field
                             type="text"
-                            name="newProject.project_name"
+                            name="newProject.projectName"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
@@ -1296,7 +1347,7 @@ const Profile = () => {
                             <label className="block text-sm font-medium text-gray-700">Start Date</label>
                             <Field
                               type="month"
-                              name="newProject.start_date"
+                              name="newProject.dates.startDate"
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             />
                           </div>
@@ -1304,8 +1355,8 @@ const Profile = () => {
                             <label className="block text-sm font-medium text-gray-700">Completion Date</label>
                             <Field
                               type="month"
-                              name="newProject.end_date"
-                              disabled={values.newProject?.is_current}
+                              name="newProject.dates.completionDate"
+                              disabled={values.newProject?.dates?.isCurrent}
                               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                             />
                           </div>
@@ -1314,7 +1365,7 @@ const Profile = () => {
                           <label className="flex items-center space-x-2">
                             <Field
                               type="checkbox"
-                              name="newProject.is_current"
+                              name="newProject.dates.isCurrent"
                               className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             />
                             <span className="text-sm font-medium text-gray-700">This is my current project</span>
@@ -1323,19 +1374,19 @@ const Profile = () => {
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Bullet Points</label>
                           <div className="space-y-2">
-                            {values.newProject?.bullet_points?.map((point, idx) => (
+                            {values.newProject?.bulletPoints?.map((point, idx) => (
                               <div key={idx} className="flex items-center space-x-2">
                                 <Field
                                   type="text"
-                                  name={`newProject.bullet_points.${idx}`}
+                                  name={`newProject.bulletPoints.${idx}`}
                                   className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const newPoints = [...(values.newProject?.bullet_points || [])];
+                                    const newPoints = [...(values.newProject?.bulletPoints || [])];
                                     newPoints.splice(idx, 1);
-                                    setFieldValue('newProject.bullet_points', newPoints);
+                                    setFieldValue('newProject.bulletPoints', newPoints);
                                   }}
                                   className={deleteButtonClass}
                                 >
@@ -1346,8 +1397,8 @@ const Profile = () => {
                             <button
                               type="button"
                               onClick={() => {
-                                const currentPoints = values.newProject?.bullet_points || [];
-                                setFieldValue('newProject.bullet_points', [...currentPoints, '']);
+                                const currentPoints = values.newProject?.bulletPoints || [];
+                                setFieldValue('newProject.bulletPoints', [...currentPoints, '']);
                               }}
                               className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                             >
@@ -1365,17 +1416,19 @@ const Profile = () => {
                             if (newProject) {
                               setFieldValue('projects', [...values.projects, {
                                 ...newProject,
-                                bullet_points: newProject.bullet_points || []
+                                bulletPoints: newProject.bulletPoints || []
                               }]);
-                              handleChange('projects', [...values.projects, { ...newProject, bullet_points: newProject.bullet_points || [] }]);
+                              handleChange('projects', [...values.projects, { ...newProject, bulletPoints: newProject.bulletPoints || [] }]);
                               setFieldValue('newProject', {
-                                project_name: '',
+                                name: '',
+                                dates: {
+                                  startDate: '',
+                                  completionDate: '',
+                                  isCurrent: false,
+                                },
                                 organization: '',
                                 location: '',
-                                start_date: '',
-                                end_date: '',
-                                is_current: false,
-                                bullet_points: []
+                                bulletPoints: []
                               });
                               closeDialog('projects');
                             }
@@ -1661,10 +1714,10 @@ const Profile = () => {
                                 }}
                               >
                                 <option value="">Select Proficiency</option>
-                                <option value="Native">Native</option>
-                                <option value="Professional">Professional</option>
-                                <option value="Intermediate">Intermediate</option>
                                 <option value="Basic">Basic</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Professional">Professional</option>
+                                <option value="Native">Native</option>
                               </Field>
                             </div>
                           </div>

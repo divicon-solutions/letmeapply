@@ -103,56 +103,80 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
 
         // Transform the API response to match ProfileData structure
         const transformedData = {
-          personal_info: {
+          personalInfo: {
             name: data.parsed_data.personalInfo?.name || '',
             email: data.parsed_data.personalInfo?.email || '',
-            phone: data.parsed_data.personalInfo?.phoneNumber || '',
-            location: data.parsed_data.personalInfo?.location || '',
-            linkedin_url: data.parsed_data.personalInfo?.linkedin || '',
-            github_url: data.parsed_data.personalInfo?.githubUrl || ''
+            phoneNumber: data.parsed_data.personalInfo?.phoneNumber || '',
+            location: data.parsed_data.personalInfo?.location || null,
+            linkedin: data.parsed_data.personalInfo?.linkedin || '',
+            githubUrl: data.parsed_data.personalInfo?.githubUrl || ''
           },
           summary: data.parsed_data.summary || '',
           education: (data.parsed_data.education || []).map((edu: any) => ({
-            school_name: edu.organization || '',
-            degree: edu.accreditation || '',
-            start_date: formatDate(edu.dates?.startDate),
-            end_date: formatDate(edu.dates?.completionDate),
-            is_current: edu.dates?.isCurrent || false,
-            bullet_points: edu.achievements || []
+            organization: edu.organization || '',
+            accreditation: edu.accreditation || '',
+            location: edu.location || '',
+            dates: {
+              startDate: formatDate(edu.dates?.startDate),
+              completionDate: formatDate(edu.dates?.completionDate),
+              isCurrent: edu.dates?.isCurrent || false
+            },
+            courses: edu.courses || [],
+            achievements: edu.achievements || []
           })),
-          work_experience: (data.parsed_data.workExperience || []).map((work: any) => ({
-            job_title: work.jobTitle || '',
-            company_name: work.organization || '',
-            start_date: formatDate(work.dates?.startDate),
-            end_date: formatDate(work.dates?.completionDate, work.dates?.completionDate === 'Present'),
-            is_current: work.dates?.isCurrent || false,
-            bullet_points: work.bulletPoints || []
+          workExperience: (data.parsed_data.workExperience || []).map((work: any) => ({
+            jobTitle: work.jobTitle || '',
+            organization: work.organization || '',
+            location: work.location || null,
+            dates: {
+              startDate: formatDate(work.dates?.startDate),
+              completionDate: formatDate(work.dates?.completionDate),
+              isCurrent: work.dates?.isCurrent || false
+            },
+            bulletPoints: work.bulletPoints || [],
+            achievements: work.achievements || []
           })),
-          skills: Object.entries(data.parsed_data.skills || {}).map(([category, skillList]: [string, any]) => ({
-            category,
-            skills: Array.isArray(skillList) ? skillList : []
+          skills: data.parsed_data.skills || {},
+          projects: (data.parsed_data.projects || []).map((project: any) => ({
+            name: project.name || '',
+            bulletPoints: project.bulletPoints || [],
+            dates: {
+              startDate: formatDate(project.dates?.startDate),
+              completionDate: formatDate(project.dates?.completionDate)
+            },
+            organization: project.organization || '',
+            location: project.location || ''
           })),
-          projects: [],
           certifications: (data.parsed_data.certifications || []).map((cert: any) => ({
             name: cert.name || '',
-            description: cert.description || '',
+            description: cert.description || ''
           })),
-          achievements: [],
-          languages: [],
-          publications: []
+          achievements: (data.parsed_data.achievements || []).map((achievement: any) => ({
+            name: achievement.name || '',
+            description: achievement.description || ''
+          })),
+          languages: (data.parsed_data.languages || []).map((language: any) => ({
+            name: language.name || '',
+            description: language.description || ''
+          })),
+          publications: (data.parsed_data.publications || []).map((pub: any) => ({
+            title: pub.title || '',
+            description: pub.description || '',
+            authors: pub.authors || []
+          }))
         };
 
         console.log('ResumeUpload - Transformed data:', JSON.stringify(transformedData, null, 2));
 
         // Ensure the data is properly structured before passing it to the parent
-        if (!transformedData.personal_info || !transformedData.education || !transformedData.work_experience) {
+        if (!transformedData.personalInfo || !transformedData.education || !transformedData.workExperience) {
           throw new Error('Missing required profile sections');
         }
 
         // Save profile to database
         try {
           const profilePayload = {
-            email: user?.primaryEmailAddress?.emailAddress || transformedData.personal_info.email,
+            email: user?.primaryEmailAddress?.emailAddress || transformedData.personalInfo.email,
             clerk_id: user?.id,
             resume: transformedData
           };
@@ -206,24 +230,24 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
   if (isButton) {
     return (
       <>
-      <button
-        type="button"
-        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={isUploading}
-      >
-        {isUploading ? 'Uploading...' : 'Re-upload Resume'}
-      </button>
-      <input
-        type="file"
-        className="hidden"
-        id="resume-upload"
-        ref={fileInputRef}
-        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        onChange={handleFileUpload}
-        disabled={isUploading}
-      />
-    </>
+        <button
+          type="button"
+          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+        >
+          {isUploading ? 'Uploading...' : 'Re-upload Resume'}
+        </button>
+        <input
+          type="file"
+          className="hidden"
+          id="resume-upload"
+          ref={fileInputRef}
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          onChange={handleFileUpload}
+          disabled={isUploading}
+        />
+      </>
     );
   }
 
