@@ -4,6 +4,8 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } fro
 import { BlobProvider, PDFViewer } from '@react-pdf/renderer';
 import ResumePDF from '../components/resume/ResumePDF';
 import { BASE_API_URL } from '@/utils/config';
+import { BsFiletypePdf } from "react-icons/bs";
+
 
 interface ResumeData {
   personalInfo: {
@@ -52,11 +54,17 @@ interface ResumeData {
   }>;
 }
 
+interface JobDetails {
+  company?: string;
+  // add other job details properties as needed
+}
+
 const ResumeDownload = () => {
   const router = useRouter();
   const { format, resume_id } = router.query;
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
+  const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,6 +81,7 @@ const ResumeDownload = () => {
         const responseData = await response.json();
         setResumeData(responseData.tailored_resume);
         setIsGenerating(false);
+        setJobDetails(responseData.job_details);
       } catch (error) {
         console.error('Error fetching resume data:', error);
         setError('Failed to fetch resume data');
@@ -82,6 +91,12 @@ const ResumeDownload = () => {
 
     fetchResumeData();
   }, [router.isReady, resume_id]);
+
+  const getFileName = () => {
+    const name = resumeData?.personalInfo?.name?.replace(/\s+/g, '_') || '';
+    const company = jobDetails?.company?.replace(/\s+/g, '_') || Math.floor(Math.random() * 1000);
+    return `${name}_${company}`;
+  };
 
   const generateDOCX = async (data: ResumeData) => {
     const sections: Paragraph[] = [];
@@ -166,7 +181,7 @@ const ResumeDownload = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'resume.docx';
+    link.download = `${getFileName()}.docx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -177,7 +192,7 @@ const ResumeDownload = () => {
   const handleDownload = (url: string, format: string) => {
     const link = document.createElement('a');
     link.href = url;
-    link.download = `resume.${format}`;
+    link.download = `${getFileName()}.${format}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -210,17 +225,27 @@ const ResumeDownload = () => {
     <div className="min-h-screen bg-gray-100">
       <div className="container mx-auto p-4">
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h1 className="text-2xl font-bold mb-4">Resume Preview</h1>
           <div className="flex justify-end space-x-4 mb-4">
+            <BlobProvider document={<ResumePDF data={resumeData} />}>
+              {({ url, loading, error: pdfError }) => (
+                <button
+                  onClick={() => url && handleDownload(url, 'pdf')}
+                  disabled={loading || !!pdfError}
+                  className="px-4 py-2 rounded-lg text-white font-medium flex items-center space-x-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400"
+                >
+                  <BsFiletypePdf />
+                  <span>Download PDF</span>
+                </button>
+              )}
+            </BlobProvider>
             <button
-              onClick={() => {
-                if (format === 'docx') {
-                  generateDOCX(resumeData);
-                }
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              onClick={() => generateDOCX(resumeData)}
+              className="px-4 py-2 rounded-lg text-white font-medium flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
             >
-              Download {typeof format === 'string' ? format.toUpperCase() : ''}
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+              </svg>
+              <span>Download DOCX</span>
             </button>
           </div>
           <div className="w-full h-[800px] border border-gray-200 rounded-lg">
