@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import ResumeUpload from './ResumeUpload';
 import { useAuth, useUser } from '@clerk/nextjs';
 import axios from 'axios';
+import { BASE_API_URL } from '@/utils/config';
+
 
 interface DialogState {
   education: boolean;
@@ -58,7 +60,7 @@ const Profile = () => {
 
       console.log('Request payload:', JSON.stringify(requestData, null, 2));
 
-      const response = await axios.post(`http://localhost:8000/api/v1/profiles`, requestData, {
+      const response = await axios.post(`${BASE_API_URL}/api/v1/profiles`, requestData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -223,7 +225,7 @@ const Profile = () => {
           return;
         }
 
-        const response = await fetch(`http://localhost:8000/api/v1/profiles/clerk/${user.id}`, {
+        const response = await fetch(`${BASE_API_URL}/api/v1/profiles/clerk/${user.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -337,7 +339,7 @@ const Profile = () => {
     };
 
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/profiles', payload);
+      const response = await axios.post(`${BASE_API_URL}/api/v1/profiles`, payload);
       console.log('API Response:', response.data);
       toast.success(`${sectionType.charAt(0).toUpperCase() + sectionType.slice(1)} deleted successfully`);
       setInitialValues(response.data.resume);
@@ -366,7 +368,7 @@ const Profile = () => {
     };
 
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/profiles', payload);
+      const response = await axios.post(`${BASE_API_URL}/api/v1/profiles`, payload);
       console.log('API Response:', response.data);
       setInitialValues(response.data.resume);
       if (section !== 'skills') {

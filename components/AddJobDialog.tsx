@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { FaPlus } from 'react-icons/fa';
 
 interface AddJobDialogProps {
     isOpen: boolean;

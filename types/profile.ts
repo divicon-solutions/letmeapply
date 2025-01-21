@@ -35,10 +35,12 @@ export interface ProfileData {
   skills: Record<string, string[]>;
   projects: Array<{
     name: string;
+    projectName?: string;
     bulletPoints: string[];
     dates: {
       startDate: string;
       completionDate: string;
+      isCurrent: boolean;
     };
     organization: string;
     location: string;
@@ -63,26 +65,26 @@ export interface ProfileData {
   newEducation: {
     organization: string;
     accreditation: string;
-    location?: string; // Optional if needed
+    location?: string;
     dates?: {
-      startDate?: string; // Optional if needed
-      completionDate?: string; // Optional if needed
-      isCurrent?: boolean; // Optional if needed
+      startDate?: string;
+      completionDate?: string;
+      isCurrent?: boolean;
     };
-    courses?: Array<string>; // Optional if needed
-    achievements?: Array<string>; // Optional if needed
+    courses?: Array<string>;
+    achievements?: Array<string>;
   };
   newWorkExperience: {
     jobTitle: string;
     organization: string;
-    location?: string; // Optional if needed
+    location?: string;
     dates?: {
-      startDate?: string; // Optional if needed
-      completionDate?: string; // Optional if needed
-      isCurrent?: boolean; // Optional if needed
+      startDate?: string;
+      completionDate?: string;
+      isCurrent?: boolean;
     };
-    bulletPoints?: Array<string>; // Optional if needed
-    achievements?: Array<string>; // Optional if needed
+    bulletPoints?: Array<string>;
+    achievements?: Array<string>;
   };
   newSkill: {
     category: string;
@@ -90,7 +92,8 @@ export interface ProfileData {
   };
   newProject: {
     name: string;
-    bulletPoints: string;
+    projectName?: string;
+    bulletPoints: string | string[];
     dates: {
       startDate: string;
       completionDate: string;
@@ -98,5 +101,22 @@ export interface ProfileData {
     };
     organization: string;
     location: string;
+  };
+  newCertification?: {
+    name: string;
+    description: string;
+  };
+  newAchievement?: {
+    name: string;
+    description: string;
+  };
+  newLanguage?: {
+    name: string;
+    description: string;
+  };
+  newPublication?: {
+    title: string;
+    description: string;
+    authors: string | string[];
   };
 }

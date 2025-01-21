@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import NavWrapper from '@/components/NavWrapper';
-import { ClerkProvider } from '@clerk/nextjs';
 
 const ResumeJobMatch = () => {
   const [resume, setResume] = useState<File | null>(null);

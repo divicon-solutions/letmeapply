@@ -12,6 +12,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "downlevelIteration": true,
+    "noImplicitAny": false,
     "plugins": [
       {
         "name": "next"

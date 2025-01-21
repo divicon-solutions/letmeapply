@@ -8,7 +8,7 @@ import { FaExternalLinkAlt } from 'react-icons/fa'; // Import the external link 
 interface ApplyDrawerProps {
     isOpen: boolean;
     onClose: () => void;
-    job: Job;
+    job: Job | null;
 }
 
 const ApplyDrawer: React.FC<ApplyDrawerProps> = ({ isOpen, onClose, job }) => {

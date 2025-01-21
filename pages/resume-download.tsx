@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from 'docx';
-import { BlobProvider } from '@react-pdf/renderer';
+import { BlobProvider, PDFViewer } from '@react-pdf/renderer';
 import ResumePDF from '../components/resume/ResumePDF';
+import { BASE_API_URL } from '@/utils/config';
 
 interface ResumeData {
   personalInfo: {
@@ -53,36 +54,37 @@ interface ResumeData {
 
 const ResumeDownload = () => {
   const router = useRouter();
-  const { format } = router.query;
+  const { format, resume_id } = router.query;
   const [resumeData, setResumeData] = useState<ResumeData | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!router.isReady) return;
+    if (!router.isReady || !resume_id) return;
 
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const encodedData = params.get('data');
+    const fetchResumeData = async () => {
+      try {
+        const response = await fetch(`${BASE_API_URL}/api/v1/resume/tailored-resume/${resume_id}`);
 
-      if (!encodedData) {
-        setError('No data provided');
+        if (!response.ok) {
+          throw new Error('Failed to fetch resume data');
+        }
+
+        const responseData = await response.json();
+        setResumeData(responseData.tailored_resume);
         setIsGenerating(false);
-        return;
+      } catch (error) {
+        console.error('Error fetching resume data:', error);
+        setError('Failed to fetch resume data');
+        setIsGenerating(false);
       }
+    };
 
-      const data: ResumeData = JSON.parse(atob(decodeURIComponent(encodedData)));
-      setResumeData(data);
-      setIsGenerating(false);
-    } catch (error) {
-      console.error('Error decoding data:', error);
-      setError('Failed to decode data');
-      setIsGenerating(false);
-    }
-  }, [router.isReady]);
+    fetchResumeData();
+  }, [router.isReady, resume_id]);
 
   const generateDOCX = async (data: ResumeData) => {
-    const sections = [];
+    const sections: Paragraph[] = [];
 
     // Header
     sections.push(
@@ -172,43 +174,61 @@ const ResumeDownload = () => {
     window.close();
   };
 
+  const handleDownload = (url: string, format: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `resume.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (isGenerating) {
+    return (
+      <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-100">
+        <div className="text-center p-4">
+          <p className="mb-2">Generating your resume...</p>
+          <p className="text-sm text-gray-600">Please wait while we prepare your resume.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-100">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
+  if (!resumeData) {
+    return null;
+  }
+
   return (
-    <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-100">
-      <div className="text-center p-4">
-        {isGenerating ? (
-          <>
-            <p className="mb-2">Generating your resume...</p>
-            <p className="text-sm text-gray-600">The download will start automatically.</p>
-          </>
-        ) : error ? (
-          <p className="text-red-500">{error}</p>
-        ) : resumeData && format === 'pdf' ? (
-          <BlobProvider document={<ResumePDF data={resumeData} />}>
-            {({ url, loading, error: pdfError }) => {
-              if (loading) return <p>Generating PDF...</p>;
-              if (pdfError) return <p className="text-red-500">Error generating PDF!</p>;
-              if (url) {
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'resume.pdf';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                setTimeout(() => window.close(), 1000);
-                return <p>Download started! You can close this window.</p>;
-              }
-              return null;
-            }}
-          </BlobProvider>
-        ) : resumeData && format === 'docx' ? (
-          <div>
-            <p>Generating DOCX...</p>
-            {(() => {
-              generateDOCX(resumeData);
-              return null;
-            })()}
+    <div className="min-h-screen bg-gray-100">
+      <div className="container mx-auto p-4">
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h1 className="text-2xl font-bold mb-4">Resume Preview</h1>
+          <div className="flex justify-end space-x-4 mb-4">
+            <button
+              onClick={() => {
+                if (format === 'docx') {
+                  generateDOCX(resumeData);
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            >
+              Download {typeof format === 'string' ? format.toUpperCase() : ''}
+            </button>
           </div>
-        ) : null}
+          <div className="w-full h-[800px] border border-gray-200 rounded-lg">
+            <PDFViewer width="100%" height="100%" className="rounded-lg">
+              <ResumePDF data={resumeData} />
+            </PDFViewer>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -82,6 +82,7 @@ export const CoverLetter = () => {
     const [error, setError] = useState<string | null>(null);
     const [coverLetterData, setCoverLetterData] = useState<CoverLetterData | null>(null);
     const [format, setFormat] = useState<'pdf' | 'docx'>('pdf');
+    const [docxGenerated, setDocxGenerated] = useState(false);
 
     useEffect(() => {
         try {
@@ -110,7 +111,7 @@ export const CoverLetter = () => {
         if (coverLetterData && !isGenerating && format === 'docx') {
             generateDocx(coverLetterData.content, coverLetterData.jobDetails.company)
                 .then(() => {
-                    setTimeout(() => window.close(), 1000);
+                    setDocxGenerated(true);
                 })
                 .catch((error) => {
                     console.error('Error generating DOCX:', error);
@@ -147,12 +148,13 @@ export const CoverLetter = () => {
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);
-                                setTimeout(() => window.close(), 1000);
                                 return <p>Download started! You can close this window.</p>;
                             }
                             return null;
                         }}
                     </BlobProvider>
+                ) : docxGenerated ? (
+                    <p>Download started! You can close this window.</p>
                 ) : (
                     <p>Generating DOCX...</p>
                 )}

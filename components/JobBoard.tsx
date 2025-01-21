@@ -7,7 +7,7 @@ import { useTabCounts } from '@/lib/hooks/useTabCounts';
 
 const JobBoard = () => {
     const [activeTab, setActiveTab] = useState('Jobs');
-    const { data: tabCounts, isLoading: isLoadingCounts } = useTabCounts();
+    const { data: tabCounts } = useTabCounts();
 
     const tabs = [
         { id: 'Jobs', label: 'Jobs' },

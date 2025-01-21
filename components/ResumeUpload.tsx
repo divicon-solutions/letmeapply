@@ -4,6 +4,7 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import { ProfileData } from '@/types/profile';
 import mammoth from 'mammoth'; // For DOCX files
 import toast from 'react-hot-toast'; // Import toast
+import { BASE_API_URL } from '@/utils/config';
 
 interface ResumeUploadProps {
   onUploadSuccess: (data: ProfileData) => void;
@@ -69,7 +70,7 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
         resume_text: extractedText,
       };
 
-      const response = await fetch('http://localhost:8000/api/v1/resume/parse-resume', {
+      const response = await fetch(`${BASE_API_URL}/api/v1/resume/parse-resume`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -186,7 +187,7 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
           const token = await getToken();
           console.log('Auth Token:', token); // Log token for debugging
 
-          const profileResponse = await fetch('http://localhost:8000/api/v1/profiles', {
+          const profileResponse = await fetch(`${BASE_API_URL}/api/v1/profiles`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -258,7 +259,7 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
           ${isUploading ? 'bg-gray-100' : 'hover:bg-gray-50'} 
           transition-colors duration-200`}
       >
-        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+        <div className="flex flex-col items-center justify-center pt-5 pb-6 p-2">
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
               <div className="w-8 h-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
@@ -268,9 +269,9 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
             <>
               <FaUpload className="w-8 h-8 mb-4 text-gray-500" />
               <p className="mb-2 text-sm text-gray-500">
-                <span className="font-semibold">Click to upload</span> or drag and drop
+                Upload or drag and drop your resume
               </p>
-              <p className="text-xs text-gray-500">PDF, DOC, DOCX</p>
+              <p className="text-xs text-gray-500">PDF, DOCX</p>
             </>
           )}
         </div>
@@ -279,7 +280,7 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
           className="hidden"
           id="resume-upload"
           ref={fileInputRef}
-          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept=".pdf,.docx,application/pdf"
           onChange={handleFileUpload}
           disabled={isUploading}
         />
