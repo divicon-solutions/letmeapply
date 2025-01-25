@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Document,
   Paragraph,
@@ -7,14 +8,21 @@ import {
   ISectionOptions,
   TabStopType,
   TabStopPosition,
-  PageOrientation,
   convertInchesToTwip,
 } from "docx";
 import { ResumeData } from "../../types/resume";
 
+interface ResumeDOCXProps {
+  data: ResumeData;
+}
+
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+};
+
+const ResumeDOCX: React.FC<ResumeDOCXProps> = ({ data }) => {
+  return null; // Component doesn't need to render anything
 };
 
 export const generateResumeDOCX = (data: ResumeData): Document => {
@@ -106,10 +114,9 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
             new TextRun({ text: edu.accreditation }),
             new TextRun({ text: "\t" }),
             new TextRun(
-              `${formatDate(edu.dates.startDate)} - ${
-                edu.dates.isCurrent
-                  ? "Present"
-                  : formatDate(edu.dates.completionDate || "")
+              `${formatDate(edu.dates.startDate)} - ${edu.dates.isCurrent
+                ? "Present"
+                : formatDate(edu.dates.completionDate || "")
               }`
             ),
           ],
@@ -156,13 +163,12 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
         }),
         new Paragraph({
           children: [
-            new TextRun({ text: job.jobTitle }),
+            new TextRun({ text: job.jobTitle, bold: true }),
             new TextRun({ text: "\t" }),
             new TextRun(
-              `${formatDate(job.dates.startDate)} - ${
-                job.dates.isCurrent
-                  ? "Present"
-                  : formatDate(job.dates.completionDate || "")
+              `${formatDate(job.dates.startDate)} - ${job.dates.isCurrent
+                ? "Present"
+                : formatDate(job.dates.completionDate || "")
               }`
             ),
           ],
@@ -233,11 +239,10 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
       if (project.dates?.startDate) {
         sections.push(
           new Paragraph({
-            text: `${formatDate(project.dates.startDate)}${
-              project.dates.completionDate
-                ? ` - ${formatDate(project.dates.completionDate)}`
-                : ""
-            }`,
+            text: `${formatDate(project.dates.startDate)}${project.dates.completionDate
+              ? ` - ${formatDate(project.dates.completionDate)}`
+              : ""
+              }`,
             spacing: { after: 100 },
           })
         );
@@ -271,9 +276,9 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
             new TextRun({ text: cert.name, bold: true }),
             ...(cert.description
               ? [
-                  new TextRun({ text: ": " }),
-                  new TextRun({ text: cert.description }),
-                ]
+                new TextRun({ text: ": " }),
+                new TextRun({ text: cert.description }),
+              ]
               : []),
           ],
           spacing: { after: 200 },
@@ -367,7 +372,8 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
           id: "Normal",
           name: "Normal",
           run: {
-            size: 22, // Reduce base font size
+            size: 22,
+            font: "Garamond"
           },
           paragraph: {
             spacing: {
@@ -376,7 +382,25 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
             },
           },
         },
+        {
+          id: "Heading2",
+          name: "Heading 2",
+          basedOn: "Normal",
+          run: {
+            size: 24,
+            bold: true,
+            font: "Garamond"
+          },
+          paragraph: {
+            spacing: {
+              before: 240,
+              after: 120
+            }
+          }
+        }
       ],
     },
   });
 };
+
+export default ResumeDOCX; 

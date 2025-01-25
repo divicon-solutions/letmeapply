@@ -14,4 +14,5 @@ export default defineConfig({
       app: path.resolve(__dirname, "./src/app"),
     },
   },
+  assetsInclude: ['**/*.ttf', '**/*.otf'],  // Add support for font files
 });

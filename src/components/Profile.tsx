@@ -23,7 +23,202 @@ interface DialogState {
 const Profile = () => {
   const { getToken } = useAuth();
   const { user } = useUser();
+  const [showFixDialog, setShowFixDialog] = useState(false);
 
+  // Add helper function to get invalid fields
+  const getInvalidFields = (values: ProfileData) => {
+    const invalidFields: { section: string; field: string; error: string }[] = [];
+
+    const checkDates = (dates: { startDate?: string; completionDate?: string; isCurrent?: boolean }, section: string, index: number) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const startDate = dates.startDate ? new Date(dates.startDate) : null;
+      const completionDate = dates.completionDate ? new Date(dates.completionDate) : null;
+
+      if (!dates.startDate && !dates.isCurrent) {
+        invalidFields.push({ section, field: `${index + 1} Start Date`, error: 'Start date is required' });
+      }
+      if (startDate && startDate > today) {
+        invalidFields.push({ section, field: `${index + 1} Start Date`, error: 'Start date cannot be in the future' });
+      }
+      if (!dates.completionDate && !dates.isCurrent) {
+        invalidFields.push({ section, field: `${index + 1} End Date`, error: 'End date is required' });
+      }
+      if (completionDate && !dates.isCurrent && completionDate > today) {
+        invalidFields.push({ section, field: `${index + 1} End Date`, error: 'End date cannot be in the future' });
+      }
+      if (startDate && completionDate && completionDate < startDate) {
+        invalidFields.push({ section, field: `${index + 1}`, error: 'End date must be after start date' });
+      }
+    };
+
+    values.education?.forEach((edu, index) => {
+      if (edu.dates) {
+        checkDates(edu.dates, 'Education', index);
+      }
+    });
+
+    values.workExperience?.forEach((work, index) => {
+      if (work.dates) {
+        checkDates(work.dates, 'Work Experience', index);
+      }
+    });
+
+    values.projects?.forEach((project, index) => {
+      if (project.dates) {
+        checkDates(project.dates, 'Projects', index);
+      }
+    });
+
+    return invalidFields;
+  };
+
+  // Add Fix Dialog component
+  const FixDialog = ({ isOpen, onClose, invalidFields }: { isOpen: boolean; onClose: () => void; invalidFields: { section: string; field: string; error: string }[] }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex items-center justify-center min-h-screen px-4">
+          <div className="fixed inset-0 bg-black opacity-30"></div>
+          <div className="relative bg-white rounded-lg w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Fields to Fix</h3>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+                <FaTimes />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {invalidFields.map((field, index) => (
+                <div key={index} className="p-3 bg-red-50 rounded-md">
+                  <h4 className="font-medium text-red-800">{field.section}</h4>
+                  <p className="text-sm text-red-700">{field.field}: {field.error}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6">
+              <button
+                onClick={onClose}
+                className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add helper function to check if dates are missing or in future
+  const hasInvalidDates = (values: ProfileData) => {
+    const checkDates = (dates: { startDate?: string; completionDate?: string; isCurrent?: boolean }) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const startDate = dates.startDate ? new Date(dates.startDate) : null;
+      const completionDate = dates.completionDate ? new Date(dates.completionDate) : null;
+
+      // Check if dates are missing when not current
+      const hasMissingDates = !dates.isCurrent && (!dates.startDate || !dates.completionDate);
+
+      // Check for future dates
+      const hasFutureStartDate = startDate ? startDate > today : false;
+      const hasFutureEndDate = completionDate && !dates.isCurrent ? completionDate > today : false;
+
+      // Check if end date is before start date
+      const hasInvalidDateRange = startDate && completionDate ? completionDate < startDate : false;
+
+      return hasMissingDates || hasFutureStartDate || hasFutureEndDate || hasInvalidDateRange;
+    };
+
+    const hasInvalidEducationDates = values.education?.some(edu => edu.dates && checkDates(edu.dates));
+    const hasInvalidWorkDates = values.workExperience?.some(work => work.dates && checkDates(work.dates));
+    const hasInvalidProjectDates = values.projects?.some(project => project.dates && checkDates(project.dates));
+
+    return hasInvalidEducationDates || hasInvalidWorkDates || hasInvalidProjectDates;
+  };
+
+  // Add helper function to get field style based on dates
+  const getDateFieldStyle = (dates: { startDate?: string; completionDate?: string; isCurrent?: boolean }, fieldType: 'start' | 'end') => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = dates.startDate ? new Date(dates.startDate) : null;
+    const completionDate = dates.completionDate ? new Date(dates.completionDate) : null;
+
+    const baseStyle = "mt-1 block w-full rounded-md shadow-sm";
+    const validStyle = "border-gray-300 focus:border-blue-500 focus:ring-blue-500";
+    const invalidStyle = "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500";
+    const disabledStyle = dates.isCurrent ? " disabled:bg-gray-100 disabled:cursor-not-allowed" : "";
+
+    if (fieldType === 'start') {
+      // Check start date specific errors
+      if (!dates.startDate && !dates.isCurrent) {
+        return `${baseStyle} ${invalidStyle}${disabledStyle}`;
+      }
+      if (startDate && startDate > today) {
+        return `${baseStyle} ${invalidStyle}${disabledStyle}`;
+      }
+      if (startDate && completionDate && completionDate < startDate) {
+        return `${baseStyle} ${invalidStyle}${disabledStyle}`;
+      }
+    }
+
+    if (fieldType === 'end') {
+      // Check end date specific errors
+      if (!dates.completionDate && !dates.isCurrent) {
+        return `${baseStyle} ${invalidStyle}${disabledStyle}`;
+      }
+      if (completionDate && !dates.isCurrent && completionDate > today) {
+        return `${baseStyle} ${invalidStyle}${disabledStyle}`;
+      }
+      if (startDate && completionDate && completionDate < startDate) {
+        return `${baseStyle} ${invalidStyle}${disabledStyle}`;
+      }
+    }
+
+    return `${baseStyle} ${validStyle}${disabledStyle}`;
+  };
+
+  // Add helper function to get date error message
+  const getDateErrorMessage = (dates: { startDate?: string; completionDate?: string; isCurrent?: boolean }, fieldType: 'start' | 'end') => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = dates.startDate ? new Date(dates.startDate) : null;
+    const completionDate = dates.completionDate ? new Date(dates.completionDate) : null;
+
+    if (fieldType === 'start') {
+      if (!dates.startDate && !dates.isCurrent) {
+        return "Start date is required";
+      }
+      if (startDate && startDate > today) {
+        return "Start date cannot be in the future";
+      }
+    }
+
+    if (fieldType === 'end') {
+      if (!dates.completionDate && !dates.isCurrent) {
+        return "End date is required";
+      }
+      if (completionDate && !dates.isCurrent && completionDate > today) {
+        return "End date cannot be in the future";
+      }
+    }
+
+    if (startDate && completionDate && completionDate < startDate) {
+      if (fieldType === 'start') {
+        return "Start date must be before end date";
+      }
+      if (fieldType === 'end') {
+        return "End date must be after start date";
+      }
+    }
+
+    return "";
+  };
 
   useEffect(() => {
     const checkToken = async () => {
@@ -684,11 +879,14 @@ const Profile = () => {
               <Field
                 type="date"
                 name={`education.${index}.dates.startDate`}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className={getDateFieldStyle(edu.dates, 'start')}
                 onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                   handleFieldBlur(`education.${index}.dates.startDate`, e.target.value, setFieldError);
                 }}
               />
+              {getDateErrorMessage(edu.dates, 'start') && (
+                <p className="mt-1 text-sm text-red-600">{getDateErrorMessage(edu.dates, 'start')}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">End Date</label>
@@ -696,11 +894,14 @@ const Profile = () => {
                 type="date"
                 name={`education.${index}.dates.completionDate`}
                 disabled={values.education[index]?.dates?.isCurrent}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className={getDateFieldStyle(edu.dates, 'end')}
                 onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                   handleFieldBlur(`education.${index}.dates.completionDate`, e.target.value, setFieldError);
                 }}
               />
+              {getDateErrorMessage(edu.dates, 'end') && (
+                <p className="mt-1 text-sm text-red-600">{getDateErrorMessage(edu.dates, 'end')}</p>
+              )}
             </div>
             <div className="flex items-center mt-6">
               <Field
@@ -894,11 +1095,14 @@ const Profile = () => {
                 <Field
                   type="date"
                   name={`workExperience.${index}.dates.startDate`}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  className={getDateFieldStyle(experience.dates, 'start')}
                   onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                     handleFieldBlur(`workExperience.${index}.dates.startDate`, e.target.value, setFieldError);
                   }}
                 />
+                {getDateErrorMessage(experience.dates, 'start') && (
+                  <p className="mt-1 text-sm text-red-600">{getDateErrorMessage(experience.dates, 'start')}</p>
+                )}
               </div>
 
               <div>
@@ -907,11 +1111,14 @@ const Profile = () => {
                   type="date"
                   name={`workExperience.${index}.dates.completionDate`}
                   disabled={values.workExperience[index]?.dates?.isCurrent}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={getDateFieldStyle(experience.dates, 'end')}
                   onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                     handleFieldBlur(`workExperience.${index}.dates.completionDate`, e.target.value, setFieldError);
                   }}
                 />
+                {getDateErrorMessage(experience.dates, 'end') && (
+                  <p className="mt-1 text-sm text-red-600">{getDateErrorMessage(experience.dates, 'end')}</p>
+                )}
               </div>
             </div>
 
@@ -1128,7 +1335,23 @@ const Profile = () => {
             >
               {({ values, setFieldValue, setFieldError }) => (
                 <Form className="space-y-6">
-                  <ResumeUpload isButton onUploadSuccess={handleResumeData} />
+                  <div className="flex justify-between items-center gap-4">
+                    <ResumeUpload isButton onUploadSuccess={handleResumeData} />
+                    {hasInvalidDates(values) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowFixDialog(true)}
+                        className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-transparent hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        Fix
+                      </button>
+                    )}
+                  </div>
+                  <FixDialog
+                    isOpen={showFixDialog}
+                    onClose={() => setShowFixDialog(false)}
+                    invalidFields={getInvalidFields(values)}
+                  />
                   <div className="space-y-8">
                     {/* Personal Information */}
                     {renderPersonalInfo(values, setFieldError)}
@@ -1234,11 +1457,14 @@ const Profile = () => {
                                   <Field
                                     type="month"
                                     name={`projects.${index}.dates.startDate`}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    className={getDateFieldStyle(proj.dates, 'start')}
                                     onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                       handleFieldBlur(`projects.${index}.dates.startDate`, e.target.value, setFieldError);
                                     }}
                                   />
+                                  {getDateErrorMessage(proj.dates, 'start') && (
+                                    <p className="mt-1 text-sm text-red-600">{getDateErrorMessage(proj.dates, 'start')}</p>
+                                  )}
                                 </div>
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700">Completion Date</label>
@@ -1246,11 +1472,14 @@ const Profile = () => {
                                     type="month"
                                     name={`projects.${index}.dates.completionDate`}
                                     disabled={proj.dates.isCurrent}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className={getDateFieldStyle(proj.dates, 'end')}
                                     onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                       handleFieldBlur(`projects.${index}.dates.completionDate`, e.target.value, setFieldError);
                                     }}
                                   />
+                                  {getDateErrorMessage(proj.dates, 'end') && (
+                                    <p className="mt-1 text-sm text-red-600">{getDateErrorMessage(proj.dates, 'end')}</p>
+                                  )}
                                 </div>
                               </div>
                             </div>

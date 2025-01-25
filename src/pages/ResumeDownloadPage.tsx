@@ -3,11 +3,10 @@ import { useParams } from 'react-router-dom';
 import { Packer } from 'docx';
 import { BlobProvider, PDFViewer } from '@react-pdf/renderer';
 import ResumePDF from '../components/resume/ResumePDF';
-import { generateResumeDOCX } from '../components/resume/ResumeDOCX';
 import { BASE_API_URL } from '../utils/config';
 import { BsFiletypePdf } from "react-icons/bs";
 import { ResumeData } from '../types/resume';
-
+import { generateResumeDOCX } from '../components/resume/ResumeDOCX';
 interface JobDetails {
     company?: string;
 }

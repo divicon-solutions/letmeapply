@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Link } from '@react-pdf/renderer';
 import { ResumeData } from '../../types/resume';
+import { fonts } from './fonts';
 
 interface ResumePDFProps {
     data: ResumeData;
@@ -12,16 +13,18 @@ const formatDate = (dateString: string) => {
 };
 
 const styles = StyleSheet.create({
-    page: { padding: 30 },
+    page: { padding: 30, fontFamily: fonts.crimsonText },
     header: { textAlign: "center", marginBottom: 10 },
-    name: { fontSize: 18 },
-    contact: { fontSize: 10, marginTop: 4 },
+    name: { fontSize: 18, fontFamily: fonts.crimsonText, fontWeight: "bold" },
+    contact: { fontSize: 10, marginTop: 4, fontFamily: fonts.crimsonText },
     section: { marginBottom: 8 },
     sectionHeader: {
         fontSize: 12,
         marginBottom: 2,
         textTransform: "uppercase",
-        fontWeight: 700
+        fontFamily: fonts.crimsonText,
+        fontWeight: "bold",
+        fontStyle: "normal"
     },
     sectionDivider: {
         marginTop: 0,
@@ -29,13 +32,22 @@ const styles = StyleSheet.create({
         borderBottom: "0.5px solid #000",
         width: "100%",
     },
-    subHeader: { fontSize: 10, marginBottom: 4 },
-    jobTitle: { fontSize: 10 },
-    organization: { fontSize: 10, fontStyle: "italic" },
-    dates: { fontSize: 10, marginBottom: 4 },
-    text: { fontSize: 10, lineHeight: 1.5 },
-    bullet: { fontSize: 10, marginLeft: 6, marginBottom: 3 },
-    link: { fontSize: 10, color: "blue", textDecoration: "underline" },
+    subHeader: {
+        fontSize: 10,
+        marginBottom: 4,
+        fontFamily: fonts.crimsonText,
+        fontWeight: "bold"
+    },
+    jobTitle: { fontSize: 10, fontFamily: fonts.crimsonText },
+    organization: {
+        fontSize: 10,
+        fontFamily: fonts.crimsonText,
+        fontWeight: "bold"
+    },
+    dates: { fontSize: 10, marginBottom: 4, fontFamily: fonts.crimsonText },
+    text: { fontSize: 10, lineHeight: 1.5, fontFamily: fonts.crimsonText },
+    bullet: { fontSize: 10, marginLeft: 6, marginBottom: 3, fontFamily: fonts.crimsonText },
+    link: { fontSize: 10, color: "blue", textDecoration: "underline", fontFamily: fonts.crimsonText },
     educationRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -53,11 +65,12 @@ const styles = StyleSheet.create({
     categoryLabel: {
         fontSize: 10,
         fontWeight: 700,
+        fontFamily: fonts.crimsonText
     },
     skillList: {
         fontSize: 10,
+        fontFamily: fonts.crimsonText
     },
-
 });
 
 const ResumePDF: React.FC<ResumePDFProps> = ({ data }) => {
