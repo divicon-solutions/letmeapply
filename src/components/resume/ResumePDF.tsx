@@ -12,6 +12,11 @@ const formatDate = (dateString: string) => {
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 };
 
+const formatUrl = (url: string) => {
+    if (!url) return url;
+    return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+};
+
 const styles = StyleSheet.create({
     page: { padding: 30, fontFamily: fonts.crimsonText },
     header: { textAlign: "center", marginBottom: 10 },
@@ -87,7 +92,9 @@ const ResumePDF: React.FC<ResumePDFProps> = ({ data }) => {
                     </Text>
                     {personalInfo.linkedin && (
                         <Text style={styles.contact}>
-                            LinkedIn: <Link src={personalInfo.linkedin} style={styles.link}>{personalInfo.linkedin}</Link>
+                            <Link src={formatUrl(personalInfo.linkedin)} style={styles.link}>{personalInfo.linkedin}</Link>
+                            {personalInfo.githubUrl && " | "}
+                            {personalInfo.githubUrl && <Link src={formatUrl(personalInfo.githubUrl)} style={styles.link}>{personalInfo.githubUrl}</Link>}
                         </Text>
                     )}
                 </View>
@@ -214,10 +221,13 @@ const ResumePDF: React.FC<ResumePDFProps> = ({ data }) => {
                         <View style={styles.sectionDivider} />
                         {data.certifications.map((cert, idx: number) => (
                             <View key={idx} style={{ marginBottom: idx === data.certifications!.length - 1 ? 0 : 4 }}>
-                                <Text style={styles.subHeader}>{cert.name}</Text>
-                                {cert.description && (
-                                    <Text style={styles.text}>{cert.description}</Text>
-                                )}
+                                <Text style={styles.subHeader}>
+                                    {cert.name}
+                                    {cert.description && ": "}
+                                    {cert.description && (
+                                        <Text style={styles.text}>{cert.description}</Text>
+                                    )}
+                                </Text>
                             </View>
                         ))}
                     </View>

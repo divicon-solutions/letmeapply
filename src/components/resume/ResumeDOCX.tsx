@@ -7,8 +7,8 @@ import {
   HeadingLevel,
   ISectionOptions,
   TabStopType,
-  TabStopPosition,
   convertInchesToTwip,
+  ExternalHyperlink,
 } from "docx";
 import { ResumeData } from "../../types/resume";
 
@@ -21,7 +21,12 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
 
-const ResumeDOCX: React.FC<ResumeDOCXProps> = ({ data }) => {
+const formatUrl = (url: string) => {
+  if (!url) return url;
+  return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+};
+
+const ResumeDOCX: React.FC<ResumeDOCXProps> = () => {
   return null; // Component doesn't need to render anything
 };
 
@@ -56,13 +61,37 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
       new Paragraph({
         children: [
           ...(data.personalInfo.linkedin
-            ? [new TextRun({ text: data.personalInfo.linkedin })]
+            ? [new ExternalHyperlink({
+              children: [
+                new TextRun({
+                  text: data.personalInfo.linkedin,
+                  color: "0000FF",
+                  underline: {
+                    type: "single",
+                    color: "0000FF"
+                  }
+                })
+              ],
+              link: formatUrl(data.personalInfo.linkedin)
+            })]
             : []),
           ...(data.personalInfo.linkedin && data.personalInfo.githubUrl
             ? [new TextRun(" | ")]
             : []),
           ...(data.personalInfo.githubUrl
-            ? [new TextRun({ text: data.personalInfo.githubUrl })]
+            ? [new ExternalHyperlink({
+              children: [
+                new TextRun({
+                  text: data.personalInfo.githubUrl,
+                  color: "0000FF",
+                  underline: {
+                    type: "single",
+                    color: "0000FF"
+                  }
+                })
+              ],
+              link: formatUrl(data.personalInfo.githubUrl)
+            })]
             : []),
         ],
         alignment: AlignmentType.CENTER,
@@ -102,11 +131,11 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
           children: [
             new TextRun({ text: edu.organization, bold: true }),
             new TextRun({ text: "\t" }),
-            new TextRun({ text: edu.location }),
+            new TextRun({ text: edu.location || "" }),
           ],
           spacing: { after: 100 },
           tabStops: [
-            { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
+            { type: TabStopType.RIGHT, position: convertInchesToTwip(7.5) },
           ],
         }),
         new Paragraph({
@@ -122,7 +151,7 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
           ],
           spacing: { after: 200 },
           tabStops: [
-            { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
+            { type: TabStopType.RIGHT, position: convertInchesToTwip(7.5) },
           ],
         })
       );
@@ -158,7 +187,7 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
           ],
           spacing: { after: 100 },
           tabStops: [
-            { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
+            { type: TabStopType.RIGHT, position: convertInchesToTwip(7.5) },
           ],
         }),
         new Paragraph({
@@ -174,7 +203,7 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
           ],
           spacing: { after: 200 },
           tabStops: [
-            { type: TabStopType.RIGHT, position: TabStopPosition.MAX },
+            { type: TabStopType.RIGHT, position: convertInchesToTwip(7.5) },
           ],
         })
       );
@@ -231,22 +260,24 @@ export const generateResumeDOCX = (data: ResumeData): Document => {
             ...(project.organization
               ? [new TextRun(` - ${project.organization}`)]
               : []),
+            ...(project.dates?.startDate
+              ? [
+                new TextRun({ text: "\t" }),
+                new TextRun(
+                  `${formatDate(project.dates.startDate)}${project.dates.completionDate
+                    ? ` - ${formatDate(project.dates.completionDate)}`
+                    : ""
+                  }`
+                )
+              ]
+              : []),
           ],
           spacing: { after: 100 },
+          tabStops: [
+            { type: TabStopType.RIGHT, position: convertInchesToTwip(7.5) },
+          ],
         })
       );
-
-      if (project.dates?.startDate) {
-        sections.push(
-          new Paragraph({
-            text: `${formatDate(project.dates.startDate)}${project.dates.completionDate
-              ? ` - ${formatDate(project.dates.completionDate)}`
-              : ""
-              }`,
-            spacing: { after: 100 },
-          })
-        );
-      }
 
       project.bulletPoints?.forEach((point) => {
         sections.push(
