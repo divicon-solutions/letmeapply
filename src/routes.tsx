@@ -4,6 +4,7 @@ import ProfilePage from './pages/ProfilePage';
 import SignInPage from './pages/SignInPage';
 import ResumeDownloadPage from './pages/ResumeDownloadPage';
 import CoverLetterPage from './pages/CoverLetterPage';
+import JobTrackerPage from './pages/JobTrackerPage';
 
 export const routes: RouteObject[] = [
     {
@@ -25,6 +26,10 @@ export const routes: RouteObject[] = [
             {
                 path: '/cover-letter',
                 element: <CoverLetterPage />,
+            },
+            {
+                path: '/job-tracker',
+                element: <JobTrackerPage />,
             }
         ],
     },

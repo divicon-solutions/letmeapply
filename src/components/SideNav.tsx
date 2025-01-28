@@ -12,6 +12,7 @@ const SideNav = ({ isOpen }: SideNavProps) => {
 
   const navItems = [
     { path: '/profile', label: 'Profile', icon: ProfileIcon },
+    { path: '/job-tracker', label: 'Job Tracker', icon: JobsIcon },
   ];
 
   return (
