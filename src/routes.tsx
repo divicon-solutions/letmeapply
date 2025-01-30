@@ -1,10 +1,12 @@
 import { Navigate, RouteObject } from 'react-router-dom';
+import { SignedIn } from '@clerk/clerk-react';
 import NavWrapper from './components/NavWrapper';
 import ProfilePage from './pages/ProfilePage';
 import SignInPage from './pages/SignInPage';
 import ResumeDownloadPage from './pages/ResumeDownloadPage';
 import CoverLetterPage from './pages/CoverLetterPage';
 import JobTrackerPage from './pages/JobTrackerPage';
+import LandingPage from './pages/LandingPage';
 
 export const routes: RouteObject[] = [
     {
@@ -13,23 +15,23 @@ export const routes: RouteObject[] = [
         children: [
             {
                 path: '/',
-                element: <ProfilePage />,
+                element: <LandingPage />,
             },
             {
                 path: '/profile',
-                element: <ProfilePage />,
+                element: <SignedIn><ProfilePage /></SignedIn>,
             },
             {
                 path: '/resume-download/:resume_id',
-                element: <ResumeDownloadPage />,
+                element: <SignedIn><ResumeDownloadPage /></SignedIn>,
             },
             {
                 path: '/cover-letter',
-                element: <CoverLetterPage />,
+                element: <SignedIn><CoverLetterPage /></SignedIn>,
             },
             {
                 path: '/job-tracker',
-                element: <JobTrackerPage />,
+                element: <SignedIn><JobTrackerPage /></SignedIn>,
             }
         ],
     },
