@@ -91,17 +91,6 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
         console.log('Raw Education Dates:', data.parsed_data.education?.map(edu => edu.dates));
         console.log('Raw Work Experience Dates:', data.parsed_data.workExperience?.map(work => work.dates));
 
-        // Helper function to format date
-        const formatDate = (dateStr: string | undefined, isPresent: boolean = false): string => {
-          if (!dateStr || isPresent) return '';
-          // If date is already in YYYY-MM-DD format, return as is
-          if (dateStr.length === 10) return dateStr;
-          // If date is in YYYY-MM format, append -01 for day
-          if (dateStr.length === 7) return `${dateStr}-01`;
-          // If it's a longer format, take first 7 chars and append -01
-          return `${dateStr.substring(0, 7)}-01`;
-        };
-
         // Transform the API response to match ProfileData structure
         const transformedData = {
           personalInfo: {
@@ -118,8 +107,8 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
             accreditation: edu.accreditation || '',
             location: edu.location || '',
             dates: {
-              startDate: formatDate(edu.dates?.startDate),
-              completionDate: formatDate(edu.dates?.completionDate),
+              startDate: (edu.dates?.startDate),
+              completionDate: (edu.dates?.completionDate),
               isCurrent: edu.dates?.isCurrent || false
             },
             courses: edu.courses || [],
@@ -130,8 +119,8 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
             organization: work.organization || '',
             location: work.location || null,
             dates: {
-              startDate: formatDate(work.dates?.startDate),
-              completionDate: formatDate(work.dates?.completionDate),
+              startDate: (work.dates?.startDate),
+              completionDate: (work.dates?.completionDate),
               isCurrent: work.dates?.isCurrent || false
             },
             bulletPoints: work.bulletPoints || [],
@@ -142,8 +131,8 @@ export default function ResumeUpload({ onUploadSuccess, isButton }: ResumeUpload
             name: project.name || '',
             bulletPoints: project.bulletPoints || [],
             dates: {
-              startDate: formatDate(project.dates?.startDate),
-              completionDate: formatDate(project.dates?.completionDate)
+              startDate: (project.dates?.startDate),
+              completionDate: (project.dates?.completionDate)
             },
             organization: project.organization || '',
             location: project.location || ''

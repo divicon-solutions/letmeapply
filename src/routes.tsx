@@ -7,6 +7,7 @@ import ResumeDownloadPage from './pages/ResumeDownloadPage';
 import CoverLetterPage from './pages/CoverLetterPage';
 import JobTrackerPage from './pages/JobTrackerPage';
 import LandingPage from './pages/LandingPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 export const routes: RouteObject[] = [
     {
@@ -19,19 +20,19 @@ export const routes: RouteObject[] = [
             },
             {
                 path: '/profile',
-                element: <SignedIn><ProfilePage /></SignedIn>,
+                element: <ProtectedRoute><ProfilePage /></ProtectedRoute>,
             },
             {
                 path: '/resume-download/:resume_id',
-                element: <SignedIn><ResumeDownloadPage /></SignedIn>,
+                element: <ProtectedRoute><ResumeDownloadPage /></ProtectedRoute>,
             },
             {
                 path: '/cover-letter',
-                element: <SignedIn><CoverLetterPage /></SignedIn>,
+                element: <ProtectedRoute><CoverLetterPage /></ProtectedRoute>,
             },
             {
                 path: '/job-tracker',
-                element: <SignedIn><JobTrackerPage /></SignedIn>,
+                element: <ProtectedRoute><JobTrackerPage /></ProtectedRoute>,
             }
         ],
     },

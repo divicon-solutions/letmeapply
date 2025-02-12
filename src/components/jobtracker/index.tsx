@@ -69,14 +69,27 @@ const JobTracker = () => {
       console.log('Status Update Response:', response.data);
       return response.data;
     },
-    onSuccess: (data) => {
-      console.log('Status update successful:', data);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
-      toast.success('Status updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['jobStatusCounts'] });
+      toast.success('Job status updated successfully');
     },
     onError: (error) => {
-      console.error('Mutation error:', error);
-      toast.error('Failed to update status');
+      toast.error('Failed to update job status');
+      console.error('Error updating job status:', error);
+    },
+  });
+
+  const { data: statusCounts = {}, isLoading: isStatusCountsLoading } = useQuery({
+    queryKey: ['jobStatusCounts'],
+    queryFn: async () => {
+      const token = await getToken();
+      const response = await axios.get(`${BASE_API_URL}/api/v1/job-tracker/status-counts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
     },
   });
 
@@ -105,10 +118,13 @@ const JobTracker = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4">
-      <StatusTabs
-        activeStatus={activeStatus}
-        onStatusChange={handleStatusChange}
-      />
+      <div className="container mx-auto px-4 py-8">
+        <StatusTabs
+          activeStatus={activeStatus}
+          onStatusChange={handleStatusChange}
+          statusCounts={statusCounts}
+        />
+      </div>
       <SearchBar
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}

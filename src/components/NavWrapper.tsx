@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { SignInButton, SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
 import { FeedbackFish } from '@feedback-fish/react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import SideNav from './SideNav';
 import { CheckUser } from '../utils/check-user';
 import '../globals.css';
@@ -11,6 +11,7 @@ import '../globals.css';
 const NavWrapper = () => {
   const { user } = useUser();
   const [isNavOpen, setIsNavOpen] = useState(true);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-white">
@@ -45,11 +46,12 @@ const NavWrapper = () => {
               </FeedbackFish>
 
               <SignedOut>
-                <SignInButton>
-                  <button className="bg-[#15ae5c] hover:bg-[#128a4a] px-5 py-2 rounded-lg transition-colors duration-200 font-medium text-white text-sm">
+                  <button 
+                    onClick={() => navigate('/signin')}
+                    className="bg-[#15ae5c] hover:bg-[#128a4a] px-5 py-2 rounded-lg transition-colors duration-200 font-medium text-white text-sm"
+                  >
                     Sign In
                   </button>
-                </SignInButton>
               </SignedOut>
 
               <SignedIn>
