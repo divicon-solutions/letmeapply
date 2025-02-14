@@ -264,7 +264,7 @@ export default function LandingPage() {
                 className="bg-[rgb(230,244,229)] text-[#15ae5c] px-8 py-3 rounded-lg font-semibold hover:bg-[#dcf0db] transition-colors duration-200 flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z" />
+                  <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z M2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
                 Watch Demo
               </motion.button>
@@ -441,17 +441,12 @@ export default function LandingPage() {
 
             {/* Workday Logo */}
             <svg viewBox="0 0 88 23" className="h-8 w-auto text-[#0875E1]" fill="currentColor">
-              <path d="M18.5,11.5c0-4.1-3.3-7.5-7.5-7.5S3.5,7.3,3.5,11.5s3.3,7.5,7.5,7.5S18.5,15.6,18.5,11.5z M11,15.5 c-2.2,0-4-1.8-4-4s1.8-4,4-4s4,1.8,4,4S13.2,15.5,11,15.5z" />
-              <path d="M27.5,4.5h4v14h-4V4.5z" />
-              <path d="M35.5,4.5h4v2.3c1.1-1.7,3-2.7,5-2.7c3.9,0,7,3.1,7,7s-3.1,7-7,7c-2,0-3.9-1-5-2.7v8.7h-4V4.5z M43.5,14.5 c1.9,0,3.5-1.6,3.5-3.5S45.4,7.5,43.5,7.5S40,9.1,40,11S41.6,14.5,43.5,14.5z" />
-              <path d="M54.5,4.5h4v2.3c1.1-1.7,3-2.7,5-2.7c3.9,0,7,3.1,7,7s-3.1,7-7,7c-2,0-3.9-1-5-2.7v8.7h-4V4.5z M62.5,14.5 c1.9,0,3.5-1.6,3.5-3.5S64.4,7.5,62.5,7.5S59,9.1,59,11S60.6,14.5,62.5,14.5z" />
-              <path d="M73.5,0.5h4v18h-4V0.5z" />
-              <path d="M81.5,0.5h4v18h-4V0.5z" />
+              <path d="M20,0C9,0,0,9,0,20s9,20,20,20s20-9,20-20S31,0,20,0z M30,30H10V10h20V30z M15,15h10v10H15V15z" />
             </svg>
 
             {/* Greenhouse Logo */}
             <svg viewBox="0 0 243 40" className="h-8 w-auto text-[#3AB549]" fill="currentColor">
-              <path d="M20,0C9,0,0,9,0,20s9,20,20,20s20-9,20-20S31,0,20,0z M30,30H10V10h20V30z M15,15h10v10H15V15z" />
+              <path d="M20,0C9,0,0,9,0,20s9,20,20,20s20-9,20-20S31,0,20,0z M11,15h10v10H11V15z" />
             </svg>
 
             {/* SimplyHired Logo */}
@@ -565,7 +560,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-4 bg-white/10 p-4 rounded-lg">
               {/* AI Powered Icon */}
               <svg viewBox="0 0 24 24" className="h-12 w-12" fill="white">
-                <path d="M21 10.5h-2.5V8c0-.8-.7-1.5-1.5-1.5h-2.5V4c0-.8-.7-1.5-1.5-1.5h-3c-.8 0-1.5.7-1.5 1.5v2.5H6c-.8 0-1.5.7-1.5 1.5v2.5H3c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h2.5V19c0 .8.7 1.5 1.5 1.5h2.5V23h3v-2.5H15c.8 0 1.5-.7 1.5-1.5v-2.5H19c.8 0 1.5-.7 1.5-1.5v-3c0-.8-.7-1.5-1.5-1.5z" />
+                <path d="M21 10.5h-2.5V8c0-.8-.7-1.5-1.5-1.5h-2.5V4c0-.8-.7-1.5-1.5-1.5h-3c-.8 0-1.5.7-1.5 1.5v2.5H6c-.8 0-1.5.7-1.5 1.5v2.5H3c-.8 0-1.5.7-1.5 1.5v3c0 .8.7 1.5 1.5 1.5h2.5V19c0 .8.7 1.5 1.5 1.5h2.5V23h3v-2.5H19c.8 0 1.5-.7 1.5-1.5v-2.5H21c.8 0 1.5-.7 1.5-1.5v-3c0-.8-.7-1.5-1.5-1.5z" />
               </svg>
               <div className="text-sm">
                 <div className="font-semibold text-white">AI Powered</div>
@@ -575,6 +570,22 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Footer Copyright */}
+      <footer className="py-3 bg-gray-50 border-t">
+        <div className="max-w-7xl mx-auto px-3">
+          <div className="text-center text-sm text-gray-500">
+            <div className="mb-2">
+              &copy; Copyright 2025. All rights reserved.
+            </div>
+            <div className="flex justify-center gap-4">
+              <a href="/privacy-policy" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Privacy Policy
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Video Modal */}
       {isVideoModalOpen && (
@@ -599,15 +610,6 @@ export default function LandingPage() {
           </div>
         </div>
       )}
-
-      {/* Footer Copyright */}
-      <footer className="py-3 bg-gray-50 border-t">
-        <div className="max-w-7xl mx-auto px-3">
-          <div className="text-center text-sm text-gray-500">
-            © Copyright 2025. All rights reserved.
-          </div>
-        </div>
-      </footer>
     </div>
   );
-} 
+}

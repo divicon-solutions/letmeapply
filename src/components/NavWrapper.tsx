@@ -8,7 +8,11 @@ import SideNav from './SideNav';
 import { CheckUser } from '../utils/check-user';
 import '../globals.css';
 
-const NavWrapper = () => {
+interface NavWrapperProps {
+  children?: React.ReactNode;
+}
+
+const NavWrapper = ({ children }: NavWrapperProps) => {
   const { user } = useUser();
   const [isNavOpen, setIsNavOpen] = useState(true);
   const navigate = useNavigate();
@@ -81,6 +85,7 @@ const NavWrapper = () => {
       <div className={`pt-16 ${user && isNavOpen ? 'lg:pl-64' : 'pl-0'} transition-all duration-300`}>
         <main className="min-h-[calc(100vh-4rem)]">
           <Outlet />
+          {children}
         </main>
       </div>
     </div>

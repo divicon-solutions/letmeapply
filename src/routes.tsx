@@ -8,6 +8,7 @@ import CoverLetterPage from './pages/CoverLetterPage';
 import JobTrackerPage from './pages/JobTrackerPage';
 import LandingPage from './pages/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import ExtensionPrivacyPolicy from './pages/ExtensionPrivacyPolicy';
 
 export const routes: RouteObject[] = [
     {
@@ -33,12 +34,16 @@ export const routes: RouteObject[] = [
             {
                 path: '/job-tracker',
                 element: <ProtectedRoute><JobTrackerPage /></ProtectedRoute>,
-            }
+            },
+            {
+                path: 'signin',
+                element: <SignInPage />,
+            },
+            {
+                path: 'privacy-policy',
+                element: <ExtensionPrivacyPolicy />,
+            },
         ],
-    },
-    {
-        path: '/signin',
-        element: <SignInPage />,
     },
     {
         path: '*',
