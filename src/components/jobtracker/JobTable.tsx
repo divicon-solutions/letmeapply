@@ -31,22 +31,23 @@ const JobTable = memo(({ jobs, isLoading, onStatusUpdate }: JobTableProps) => {
   return (
     <div className="rounded-lg overflow-hidden">
       {/* Table Header - Fixed */}
-      <div className="mb-2 grid grid-cols-4 gap-4 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg text-sm font-medium text-gray-500 sticky top-0 shadow-sm">
+      <div className="mb-2 grid grid-cols-5 gap-4 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-lg text-sm font-medium text-gray-500 sticky top-0 shadow-sm">
         <div>Position / Role</div>
         <div>Company</div>
         <div>Location</div>
+        <div>Applied on</div>
         <div>Interview Stage</div>
       </div>
 
       {/* Table Body */}
       <div className="space-y-2 overflow-y-auto max-h-[calc(100vh-300px)] pr-2">
-        {jobs.map((job) => (
+        {[...jobs].reverse().map((job) => (
           <motion.div
             key={job.id}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-4 gap-4 px-4 py-3 rounded-lg items-center bg-white/50 hover:bg-white/80 backdrop-blur-sm transition-all duration-200"
+            className="grid grid-cols-5 gap-4 px-4 py-3 rounded-lg items-center bg-white/50 hover:bg-white/80 backdrop-blur-sm transition-all duration-200"
           >
             {/* Position */}
             <div className="text-sm font-medium">
@@ -71,6 +72,19 @@ const JobTable = memo(({ jobs, isLoading, onStatusUpdate }: JobTableProps) => {
             <div>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${locationColorMap[job.extraction.location as keyof typeof locationColorMap] || 'bg-gray-100 text-gray-800'}`}>
                 {job.extraction.location}
+              </span>
+            </div>
+
+            {/* Applied on */}
+            <div>
+              <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {new Date(job.created_at).toLocaleString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
               </span>
             </div>
 

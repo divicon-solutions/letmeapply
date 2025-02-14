@@ -14,7 +14,7 @@ interface NavWrapperProps {
 
 const NavWrapper = ({ children }: NavWrapperProps) => {
   const { user } = useUser();
-  const [isNavOpen, setIsNavOpen] = useState(true);
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const navigate = useNavigate();
 
   return (
@@ -50,12 +50,12 @@ const NavWrapper = ({ children }: NavWrapperProps) => {
               </FeedbackFish>
 
               <SignedOut>
-                  <button 
-                    onClick={() => navigate('/signin')}
-                    className="bg-[#15ae5c] hover:bg-[#128a4a] px-5 py-2 rounded-lg transition-colors duration-200 font-medium text-white text-sm"
-                  >
-                    Sign In
-                  </button>
+                <button
+                  onClick={() => navigate('/signin')}
+                  className="bg-[#15ae5c] hover:bg-[#128a4a] px-5 py-2 rounded-lg transition-colors duration-200 font-medium text-white text-sm"
+                >
+                  Sign In
+                </button>
               </SignedOut>
 
               <SignedIn>
@@ -82,8 +82,8 @@ const NavWrapper = ({ children }: NavWrapperProps) => {
       </SignedIn>
 
       {/* Main Content */}
-      <div className={`pt-16 ${user && isNavOpen ? 'lg:pl-64' : 'pl-0'} transition-all duration-300`}>
-        <main className="min-h-[calc(100vh-4rem)]">
+      <div className={`pt-16 ${user && isNavOpen ? 'lg:pl-52' : 'pl-0'} transition-all duration-300`}>
+        <main className="min-h-[calc(100vh-4rem)] px-6">
           <Outlet />
           {children}
         </main>

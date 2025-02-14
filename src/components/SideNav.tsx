@@ -18,7 +18,7 @@ const SideNav = ({ isOpen }: SideNavProps) => {
   return (
     <SignedIn>
       <aside
-        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-40 ${isOpen ? 'w-64' : 'w-0'
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-40 ${isOpen ? 'w-64' : 'w-16'
           } pt-16`}
       >
         <nav className="h-full">
@@ -29,11 +29,11 @@ const SideNav = ({ isOpen }: SideNavProps) => {
                 <li key={item.path}>
                   <Link
                     to={item.path}
-                    className={`flex items-center px-6 py-3 text-gray-700 hover:bg-[rgb(230,244,229)] hover:text-[#15ae5c] transition-colors duration-200 ${location.pathname === item.path ? 'bg-[rgb(230,244,229)] text-[#15ae5c]' : ''
+                    className={`flex items-center ${isOpen ? 'px-6' : 'px-4'} py-3 text-gray-700 hover:bg-[rgb(230,244,229)] hover:text-[#15ae5c] transition-colors duration-200 ${location.pathname === item.path ? 'bg-[rgb(230,244,229)] text-[#15ae5c]' : ''
                       }`}
                   >
                     <Icon />
-                    <span className="ml-4">{item.label}</span>
+                    {isOpen && <span className="ml-4">{item.label}</span>}
                   </Link>
                 </li>
               );

@@ -52,6 +52,7 @@ const EducationSection = ({
     const handleDateBlur = (fieldName: string, value: string) => {
         const fullDate = formatMonthToDate(value);
         handleFieldBlur(fieldName, fullDate, setFieldError);
+        setFieldValue(fieldName, fullDate);
     };
 
     return (
@@ -127,6 +128,10 @@ const EducationSection = ({
                                 name={`education.${index}.dates.startDate`}
                                 value={formatDateToMonth(edu.dates?.startDate)}
                                 className={getDateFieldStyle(edu.dates, 'start')}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const fullDate = formatMonthToDate(e.target.value);
+                                    setFieldValue(`education.${index}.dates.startDate`, fullDate);
+                                }}
                                 onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                     handleDateBlur(`education.${index}.dates.startDate`, e.target.value);
                                 }}
@@ -143,6 +148,10 @@ const EducationSection = ({
                                 value={formatDateToMonth(edu.dates?.completionDate)}
                                 disabled={values.education[index]?.dates?.isCurrent}
                                 className={getDateFieldStyle(edu.dates, 'end')}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const fullDate = formatMonthToDate(e.target.value);
+                                    setFieldValue(`education.${index}.dates.completionDate`, fullDate);
+                                }}
                                 onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                     handleDateBlur(`education.${index}.dates.completionDate`, e.target.value);
                                 }}
@@ -215,6 +224,10 @@ const EducationSection = ({
                                         type="month"
                                         name="newEducation.dates.startDate"
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                            const fullDate = formatMonthToDate(e.target.value);
+                                            formikSetFieldValue('newEducation.dates.startDate', fullDate);
+                                        }}
                                         onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                             handleDateBlur('newEducation.dates.startDate', e.target.value);
                                         }}
@@ -226,6 +239,10 @@ const EducationSection = ({
                                         type="month"
                                         name="newEducation.dates.completionDate"
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                            const fullDate = formatMonthToDate(e.target.value);
+                                            formikSetFieldValue('newEducation.dates.completionDate', fullDate);
+                                        }}
                                         onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                             handleDateBlur('newEducation.dates.completionDate', e.target.value);
                                         }}

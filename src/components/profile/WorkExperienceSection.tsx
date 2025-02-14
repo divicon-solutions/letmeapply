@@ -53,6 +53,7 @@ const WorkExperienceSection = ({
     const handleDateBlur = (fieldName: string, value: string) => {
         const fullDate = formatMonthToDate(value);
         handleFieldBlur(fieldName, fullDate, setFieldError);
+        setFieldValue(fieldName, fullDate);
     };
 
     return (
@@ -139,6 +140,10 @@ const WorkExperienceSection = ({
                                     name={`workExperience.${index}.dates.startDate`}
                                     value={formatDateToMonth(experience.dates?.startDate)}
                                     className={getDateFieldStyle(experience.dates, 'start')}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        const fullDate = formatMonthToDate(e.target.value);
+                                        setFieldValue(`workExperience.${index}.dates.startDate`, fullDate);
+                                    }}
                                     onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                         handleDateBlur(`workExperience.${index}.dates.startDate`, e.target.value);
                                     }}
@@ -156,6 +161,10 @@ const WorkExperienceSection = ({
                                     value={formatDateToMonth(experience.dates?.completionDate)}
                                     disabled={values.workExperience[index]?.dates?.isCurrent}
                                     className={getDateFieldStyle(experience.dates, 'end')}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        const fullDate = formatMonthToDate(e.target.value);
+                                        setFieldValue(`workExperience.${index}.dates.completionDate`, fullDate);
+                                    }}
                                     onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                         handleDateBlur(`workExperience.${index}.dates.completionDate`, e.target.value);
                                     }}
@@ -275,6 +284,10 @@ const WorkExperienceSection = ({
                                             type="month"
                                             name="newWorkExperience.dates.startDate"
                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                const fullDate = formatMonthToDate(e.target.value);
+                                                formikSetFieldValue('newWorkExperience.dates.startDate', fullDate);
+                                            }}
                                             onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                                 handleDateBlur('newWorkExperience.dates.startDate', e.target.value);
                                             }}
@@ -287,6 +300,10 @@ const WorkExperienceSection = ({
                                             name="newWorkExperience.dates.completionDate"
                                             disabled={formikValues.newWorkExperience?.dates?.isCurrent}
                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                const fullDate = formatMonthToDate(e.target.value);
+                                                formikSetFieldValue('newWorkExperience.dates.completionDate', fullDate);
+                                            }}
                                             onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                                 handleDateBlur('newWorkExperience.dates.completionDate', e.target.value);
                                             }}
