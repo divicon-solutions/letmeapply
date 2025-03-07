@@ -16,6 +16,7 @@ export const updateSection = async (
       throw new Error("No authentication token available");
     }
     console.log("Token used for request:", token);
+    console.log("Summary", sectionName, content);
 
     const requestData = {
       email,
@@ -26,7 +27,7 @@ export const updateSection = async (
       },
     };
 
-    console.log("Request payload:", JSON.stringify(requestData, null, 2));
+    console.log("Request payloadUS:", JSON.stringify(requestData, null, 2));
 
     const response = await axios.post(
       `${BASE_API_URL}/api/v1/profiles`,
@@ -92,7 +93,7 @@ export const handleChange = async (
       },
     };
 
-    console.log("Request payload:", JSON.stringify(requestData, null, 2));
+    console.log("Request payload:HC", JSON.stringify(requestData, null, 2));
 
     const response = await axios.put(
       `${BASE_API_URL}/api/v1/profiles/clerk/${clerk_id}`,
@@ -109,8 +110,7 @@ export const handleChange = async (
 
     if (section !== "skills") {
       toast.success(
-        `${
-          section.charAt(0).toUpperCase() + section.slice(1)
+        `${section.charAt(0).toUpperCase() + section.slice(1)
         } updated successfully`
       );
     }

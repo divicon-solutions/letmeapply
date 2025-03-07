@@ -17,6 +17,7 @@ import PublicationsSection from '../components/profile/PublicationsSection';
 import ResumeButton from '../components/profile/ResumeButton';
 import FixButton from '../components/profile/FixButton';
 import FixDialog from '../components/profile/FixDialog';
+import Summary from '../components/profile/Summary';
 import { getInvalidFields } from '../components/profile/DateFieldHelper';
 import { updateSection, handleChange as apiHandleChange } from '../components/profile/UpdateApi';
 import axios from 'axios';
@@ -198,19 +199,6 @@ const ProfilePage = () => {
         setInitialValues(newValues);
     };
 
-    const setFieldError = (field: string, message: string | undefined) => {
-        // This function would be implemented if you're using a form management library like Formik
-        console.log('Field error:', field, message);
-    };
-
-    const openDialog = (type: keyof typeof dialogOpen) => {
-        setDialogOpen({ ...dialogOpen, [type]: true });
-    };
-
-    const closeDialog = (type: keyof typeof dialogOpen) => {
-        setDialogOpen({ ...dialogOpen, [type]: false });
-    };
-
     if (!isLoaded) {
         return <div>Loading...</div>;
     }
@@ -293,6 +281,12 @@ const ProfilePage = () => {
                                     values={initialValues}
                                     setFieldError={setFieldError}
                                     handleFieldBlur={handleFieldBlur}
+                                />
+                                <Summary
+                                    values={initialValues}
+                                    setFieldError={setFieldError}
+                                    handleFieldBlur={handleFieldBlur}
+                                    setFieldValue={setFieldValue}
                                 />
                                 <EducationSection
                                     values={initialValues}
